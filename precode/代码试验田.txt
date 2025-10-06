@@ -1,0 +1,117 @@
+代码试验田
+
+参数2
+op not result 0 0 //flip按位非
+op abs result 0 0
+op sign result 0 0
+op log result 0 0 //自然对数
+op log10 result 0 0
+op floor result 0 0
+op ceil result 0 0
+op round result 0 0
+op sqrt result 0 0
+op rand result 0 0
+op sin result 0 0
+op cos result 0 0
+op tan result 0 0
+op asin result 0 0
+op acos result 0 0
+op atan result 0 0
+
+参数3 中间
+op add result 0 0
+op sub result 0 0
+op mul result 0 0
+op div result 0 0
+op idiv result 0 0
+op mod result 0 0
+op emod result 0 0
+op pow result 0 0
+op equal result 0 0
+op notEqual result 0 0
+op land result 0 0
+op lessThan result 0 0
+op lessThanEq result 0 0
+op greaterThan result 0 0
+op greaterThanEq result 0 0
+op strictEqual result 0 0
+op shl result 0 0
+op shr result 0 0
+op ushr result 0 0
+op or result 0 0
+op and result 0 0
+op xor result 0 0
+
+参数3 前置
+op max result 0 0
+op min result 0 0
+op angle result 0 0
+op angleDiff result 0 0
+op len result 0 0
+op noise result 0 0
+op logn result 0 0 //参数2为底数
+
+
+set result 0
+
+select result equal x false a b
+select result notEqual x false a b
+select result lessThan x false a b
+select result lessThanEq x false a b
+select result greaterThan x false a b
+select result greaterThanEq x false a b
+select result strictEqual x false a b
+select result always x false a b
+
+lookup block result 0
+lookup unit result 0
+lookup item result 0
+lookup liquid result 0
+lookup team result 0
+
+set r 1
+set g 0
+set b 0
+set a 1
+packcolor result r g b a
+unpackcolor r g b a result
+
+read result cell1 0
+write result cell1 0
+draw clear r g b
+print "frog"
+printchar 65
+format "frog"
+
+drawflush display1
+printflush message1
+getlink result 0
+control enabled block1 0 0 0 0
+radar enemy any any distance turret1 1 result
+sensor result block1 @copper
+
+control enabled block1 0 0 0 0
+control shoot block1 0 0 0 0
+control shootp block1 0 0 0 0
+control config block1 0 0 0 0
+control color block1 0 0 0 0
+
+control shoot block1 x y sp 0
+control shootp block1 u st 0 0
+
+
+wait 0.5
+stop
+end
+jump -1 notEqual 0 0
+
+ubind @poly
+ucontrol move 0 0 0 0 0
+uradar enemy any any distance 0 1 result
+
+ulocate ore core true @copper bd.x bd.y bd.f bd
+ulocate building core true @copper bd.x bd.y bd.f bd
+ulocate spawn core true @copper bd.x bd.y bd.f bd
+ulocate damaged core true @copper bd.x bd.y bd.f bd
+ulocate building core true @copper outx outy found building
+
