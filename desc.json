@@ -112,7 +112,7 @@
             "angleDiff",
             "len",
             "noise",
-            "logn"
+            "log"
         ],
         "keyword_convert": [
             "max",
