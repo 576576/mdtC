@@ -77,7 +77,7 @@ op logn result p2 p1
 运算符的类型:
 {equal notEqual lessThan lessThanEq greaterThan greaterThanEq strictEqual always}
 在输入代码中为:
-{== != < <= > >= === \/}
+{== != < <= > >= === always}
 
 result=(p1==p2)?p3:p4
 select result equal p1 p2 p3 p4
@@ -145,15 +145,15 @@ c.控制io
 
 1.缓存刷新
 
-dflush(dp1)
+dp1.dflush()
 drawflush dp1
 
-pflush(msg1)
+msg1.pflush()
 printflush msg1
 
 2.获取连接
 
-result=getlink(p1)
+result=link(p1)
 getlink result p1
 
 3.传感
@@ -169,12 +169,12 @@ sensor result block1 p1
 参数3为筛选器类型,范围:
 {distance health shield armor maxHealth}
 参数5为排序方式,1为正序,0为倒序;
-若目标类型参数不足3个,则使用any填充,目标类型若无,默认为enemy,
-筛选器若无,默认为distance,
-排序方式若无,则默认为正序1;
+若目标类型target参数不足3个,则使用any填充,若无,默认为enemy,
+筛选器sort若无,默认为distance,
+排序方式order若无,则默认为正序1;
 
-result=radar(turret1).target(enemy,ground).order(0).sort(distance)
-radar enemy ground any distance turret1 0 result
+result=radar(t1).target(enemy,ground).order(0).sort(distance)
+radar enemy ground any distance t1 0 result
 
 result=radar(turret1)
 radar enemy any any distance turret1 1 result
@@ -193,8 +193,8 @@ control enabled block1 p1 0 0 0
 block1.shoot(st).to(x,y)
 control shoot block1 x y st 0
 
-block1.shoot(st).to(unit1)
-control shoot block1 unit1 st 0 0
+block1.shootp(st).to(unit1)
+control shootp block1 unit1 st 0 0
 
 6.顺序控制
 按照示例转换
@@ -202,10 +202,10 @@ control shoot block1 unit1 st 0 0
 wait(p1)
 wait p1
 
-stop
+stop()
 stop
 
-end
+end()
 end
 
 7.单位命令控制
@@ -256,3 +256,32 @@ ulocate spawn core 0 @copper bd.x bd.y bd.f bd
 
 bd=ulocate(damaged)
 ulocate damaged core 0 @copper bd.x bd.y bd.f bd
+
+d.特殊
+
+1. 注释
+::开头行为注释(同标签)
+文档开头默认附加::HEAD
+保留标签: ::PRESERVE TAG #n
+
+2. 跳转
+
+jump(x1).when(x>3)
+满足条件跳转x1
+.when()缺失为always
+必须搭配::x1标签使用
+
+
+jump2(x1)
+set @counter x1
+使用setcounter跳转
+x1变量不为有效数字时行为未定义
+
+
+do{
+}while(x>x1)
+不解释 @planned
+
+for(i=1;i<3;i=i+1){
+}ef
+不解释,后大括号加ef @planned
