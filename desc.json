@@ -1,0 +1,312 @@
+[
+    {
+        "type": "set",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "result=arg1",
+        "sample_output": "set result arg1",
+        "desc": "简单赋值"
+    },
+    {
+        "type": "op.1",
+        "keyword": [
+            "not",
+            "abs",
+            "sign",
+            "ln",
+            "lg",
+            "floor",
+            "ceil",
+            "round",
+            "sqrt",
+            "rand",
+            "sin",
+            "cos",
+            "tan",
+            "asin",
+            "acos",
+            "atan"
+        ],
+        "keyword_convert": [
+            "not",
+            "abs",
+            "sign",
+            "log",
+            "log10",
+            "floor",
+            "ceil",
+            "round",
+            "sqrt",
+            "rand",
+            "sin",
+            "cos",
+            "tan",
+            "asin",
+            "acos",
+            "atan"
+        ],
+        "sample_input": "result=abs(arg1)",
+        "sample_output": "op abs result arg1 0",
+        "desc": "单元运算符"
+    },
+    {
+        "type": "op.2a",
+        "keyword": [
+            "+",
+            "-",
+            "*",
+            "/",
+            "//",
+            "%",
+            "%%",
+            ".^",
+            "==",
+            "!=",
+            "&&",
+            "<",
+            "<=",
+            ">",
+            ">=",
+            "===",
+            "<<",
+            ">>",
+            ">>>",
+            "|",
+            "&",
+            "^"
+        ],
+        "keyword_convert": [
+            "add",
+            "sub",
+            "mul",
+            "div",
+            "idiv",
+            "mod",
+            "emod",
+            "pow",
+            "equal",
+            "notEqual",
+            "land",
+            "lessThan",
+            "lessThanEq",
+            "greaterThan",
+            "greaterThanEq",
+            "strictEqual",
+            "shl",
+            "shr",
+            "ushr",
+            "or",
+            "and",
+            "xor"
+        ],
+        "sample_input": "result=arg1^^arg2",
+        "sample_output": "op xor result arg1 arg2",
+        "desc": "二元运算符 中置型"
+    },
+    {
+        "type": "op.2b",
+        "keyword": [
+            "max",
+            "min",
+            "angle",
+            "angleDiff",
+            "len",
+            "noise",
+            "logn"
+        ],
+        "keyword_convert": [
+            "max",
+            "min",
+            "angle",
+            "angleDiff",
+            "len",
+            "noise",
+            "logn"
+        ],
+        "sample_input": "result=max(arg1,arg2)",
+        "sample_output": "op max result arg1 arg2",
+        "desc": "二元运算符 前置型"
+    },
+    {
+        "type": "select",
+        "keyword": [
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">=",
+            "===",
+            "always"
+        ],
+        "keyword_convert": [
+            "equal",
+            "notEqual",
+            "lessThan",
+            "lessThanEq",
+            "greaterThan",
+            "greaterThanEq",
+            "strictEqual",
+            "always"
+        ],
+        "sample_input": "result= arg1==arg2?arg3:arg4",
+        "sample_output": "select result equal arg1 arg2 arg3 arg4",
+        "desc": "条件跳转符"
+    },
+    {
+        "type": "lookup",
+        "keyword": [
+            "block",
+            "unit",
+            "item",
+            "liquid",
+            "team"
+        ],
+        "keyword_convert": [
+            "block",
+            "unit",
+            "item",
+            "liquid",
+            "team"
+        ],
+        "sample_input": "result=item(arg1)",
+        "sample_output": "lookup item result arg1",
+        "desc": "查找转换符"
+    },
+    {
+        "type": "packcolor",
+        "keyword": ["pcolor"],
+        "keyword_convert": ["packcolor"],
+        "sample_input": "result=pcolor(r,g,b,a)",
+        "sample_output": "packcolor result r g b a",
+        "desc": "颜色打包"
+    },
+    {
+        "type": "unpackcolor",
+        "keyword": ["upcolor"],
+        "keyword_convert": ["unpackcolor"],
+        "sample_input": "upcolor(r,g,b,a).from(result)",
+        "sample_output": "unpackcolor r g b a result",
+        "desc": "颜色解包"
+    },
+    {
+        "type": "read",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "result=cell1.read(arg1)",
+        "sample_output": "read result cell1 arg1",
+        "desc": "内存io:读取"
+    },
+    {
+        "type": "write",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "write(result).to(cell1,arg1)",
+        "sample_output": "write result cell1 arg1",
+        "desc": "内存io:写入"
+    },
+    {
+        "type": "print",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "print(arg1)",
+        "sample_output": "print arg1",
+        "desc": "信息板io:打印"
+    },
+    {
+        "type": "printchar",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "printchar(65)",
+        "sample_output": "printchar 65",
+        "desc": "信息板io:打印utf16字符"
+    },
+    {
+        "type": "format",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "format(arg1)",
+        "sample_output": "format arg1",
+        "desc": "信息板io:格式化字符串"
+    },
+    {
+        "type": "dflush",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "dflush(darg1)",
+        "sample_output": "drawflush darg1",
+        "desc": "缓存刷新:显示屏"
+    },
+    {
+        "type": "pflush",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "pflush(msg1)",
+        "sample_output": "printflush msg1",
+        "desc": "缓存刷新:信息板"
+    },
+    {
+        "type": "getlink",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "result=link(arg1)",
+        "sample_output": "getlink result arg1",
+        "desc": "获取连接:getlink"
+    },
+    {
+        "type": "sensor",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "result=block1.sensor(arg1)",
+        "sample_output": "sensor result block1 arg1",
+        "desc": "传感:sensor调用"
+    },
+    {
+        "type": "radar",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "result=radar(t1).target(enemy,ground).order(0).sort(distance)",
+        "sample_output": "radar enemy ground any distance t1 0 result",
+        "desc": "雷达探测:参数填充与顺序"
+    },
+    {
+        "type": "control",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "block1.enabled(arg1)",
+        "sample_output": "control enabled block1 arg1 0 0 0",
+        "desc": "控制输出:enabled参数默认值"
+    },
+    {
+        "type": "control",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "block1.shoot(st).to(x,y)",
+        "sample_output": "control shoot block1 x y st 0",
+        "desc": "控制输出:shoot+to参数组合"
+    },
+    {
+        "type": "ubind",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "ubind(arg1)",
+        "sample_output": "ubind arg1",
+        "desc": "单位绑定:ubind"
+    },
+    {
+        "type": "radar",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "result=uradar().target(enemy,ground).order(0).sort(distance)",
+        "sample_output": "radar enemy ground any distance 0 0 result",
+        "desc": "单位雷达探测:参数填充与顺序"
+    },
+    {
+        "type": "ulocate",
+        "keyword": [],
+        "keyword_convert": [],
+        "sample_input": "bd=ulocate(ore).ore(@lead)",
+        "sample_output": "ulocate ore core 0 @lead bd.x bd.y bd.f bd",
+        "desc": "单位地形探测:默认参数填充"
+    }
+]
