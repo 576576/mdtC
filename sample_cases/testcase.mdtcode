@@ -1,0 +1,9 @@
+control enabled block1 false 0 0 0
+control shoot block1 0 0 0 0
+control enabled block2 1 0 0 0
+control config block2 null 0 0 0
+control enabled block2 1 0 0 0
+control config block2 null 0 0 0
+control shootp b3 u1 1 0 0
+control shoot b4 x y 1 0
+control shootp b4 u2 0 0 0

@@ -99,7 +99,7 @@
             "and",
             "xor"
         ],
-        "sample_input": "result=arg1^^arg2",
+        "sample_input": "result=arg1^arg2",
         "sample_output": "op xor result arg1 arg2",
         "desc": "二元运算符 中置型"
     },
@@ -149,7 +149,7 @@
             "strictEqual",
             "always"
         ],
-        "sample_input": "result= arg1==arg2?arg3:arg4",
+        "sample_input": "result=select(arg1==arg2 ? arg3:arg4)",
         "sample_output": "select result equal arg1 arg2 arg3 arg4",
         "desc": "条件跳转符"
     },
@@ -201,8 +201,8 @@
         "type": "write",
         "keyword": [],
         "keyword_convert": [],
-        "sample_input": "write(result).to(cell1,arg1)",
-        "sample_output": "write result cell1 arg1",
+        "sample_input": "cell1.write(result,bit)",
+        "sample_output": "write result cell1 bit",
         "desc": "内存io:写入"
     },
     {

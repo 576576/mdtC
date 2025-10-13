@@ -1,0 +1,7 @@
+getlink s e
+jump 0 always 0 0
+jump 0 always 0 0
+jump 0 always 0 0
+jump 0 notEqual x 3
+jump 6 lessThan x u
+op add x x 1

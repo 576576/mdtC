@@ -1,0 +1,17 @@
+print "1145{0}"
+printchar 64
+format 14
+wait 6
+ubind @mono
+stop
+end
+control color b1 0 0 0 0
+control enabled b1 false 0 0 0
+control config b1 null 0 0 0
+control shoot b2 x y 1 0
+control shootp b2 u1 st 0 0
+control config b2 @copper 0 0 0
+drawflush msg
+printflush msg
+unpackcolor r g b a color1
+write cell1 result x1

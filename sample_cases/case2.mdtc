@@ -1,0 +1,17 @@
+::控制(无副作用)
+print("1145{0}")
+printchar(64)
+format(14)
+wait(6)
+ubind(@mono)
+stop()
+end()
+
+
+::点控制(无副作用)
+b1.enable(false).config(null).color(0)
+b2.shoot().target(x,y)
+b2.shoot(st).target(u1).config(@copper)
+msg.pflush().dflush()
+color1.unpack(r,g,b,a)
+result.write(cell1,x1)

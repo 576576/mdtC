@@ -1,0 +1,79 @@
+op add q 1 1
+op add mid.1 1 2
+op mul mid.2 3 4
+op div mid.3 mid.2 5
+op idiv mid.4 mid.3 6
+op mod mid.5 mid.4 7
+op pow mid.6 8 9
+op emod mid.7 mid.5 mid.6
+op sub x mid.1 mid.7
+op equal mid.1 1 2
+op notEqual mid.2 mid.1 3
+op land mid.3 mid.2 4
+op lessThan mid.4 mid.3 5
+op lessThanEq mid.5 mid.4 6
+op greaterThan mid.6 mid.5 7
+op greaterThanEq mid.7 mid.6 8
+op strictEqual y mid.7 9
+op shl mid.1 1 2
+op shr mid.2 mid.1 3
+op ushr mid.3 mid.2 4
+op or mid.4 mid.3 5
+op and mid.5 mid.4 6
+op xor z mid.5 7
+op min mid.1 3 4
+op angle mid.2 5 6
+op max mid.3 1 2
+op angleDiff mid.4 7 8
+op add mid.5 mid.3 mid.1
+op add mid.6 mid.5 mid.2
+op add i mid.6 mid.4
+op logn mid.1 6 5
+op len mid.2 1 2
+op noise mid.3 3 4
+op add mid.4 mid.2 mid.3
+op add j mid.4 mid.1
+op log mid.1 4 0
+op sign mid.2 3
+op not mid.3 1
+op floor mid.4 6.7
+op ceil mid.5 8.9
+op abs mid.6 2 0
+op log10 mid.7 5 0
+op mul mid.8 mid.3 mid.6
+op mul mid.9 mid.8 mid.2
+op mul mid.10 mid.9 mid.1
+op mul mid.11 mid.10 mid.7
+op mul mid.12 mid.11 mid.4
+op mul k mid.12 mid.5
+op cos mid.1 5
+op cos mid.2 8
+op atan mid.3 9
+op rand mid.4 3
+op sqrt mid.5 2
+op sin mid.6 4
+op sin mid.7 7
+op tan mid.8 6
+op round mid.9 1
+op mul mid.10 mid.9 mid.5
+op mul mid.11 mid.10 mid.4
+op mul mid.12 mid.11 mid.6
+op mul mid.13 mid.12 mid.1
+op mul mid.14 mid.13 mid.8
+op mul mid.15 mid.14 amid.7
+op mul mid.16 mid.15 amid.2
+op mul h mid.16 mid.3
+op add mid.1 x y
+op add mid.2 mid.1 z
+op add mid.3 mid.2 i
+op add mid.4 mid.3 j
+op add mid.5 mid.4 k
+op add l mid.5 h
+op min mid.1 3 x3
+op abs mid.2 c 0
+op sub mid.3 re 1
+op mul mid.4 isd2 mid.2
+op add mid.5 mid.3 mid.4
+op add mid.6 mid.1 8
+op pow mid.7 mid.6 yy5
+op xor res mid.5 mid.7
