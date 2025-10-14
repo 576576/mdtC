@@ -25,6 +25,10 @@ public record stdIOStream(ArrayList<String> bash, String expr, int stat) {
         return new stdIOStream(expr);
     }
 
+    public static stdIOStream from(ArrayList<String> bash) {
+        return new stdIOStream(bash);
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -38,6 +42,7 @@ public record stdIOStream(ArrayList<String> bash, String expr, int stat) {
     public ArrayList<String> toStringArray() {
         ArrayList<String> result = new ArrayList<>(bash);
         result.add(expr);
+        result.removeIf(String::isEmpty);
         return result;
     }
 }

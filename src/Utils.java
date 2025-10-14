@@ -71,22 +71,20 @@ public class Utils {
             openWithSystemExplorer(outputFilePath);
     }
 
-    public static void clearConsole() {
-        Robot r;
-        try {
-            r = new Robot();
-            r.delay(200);
-            r.keyPress(KeyEvent.VK_NUM_LOCK);
-            r.keyRelease(KeyEvent.VK_NUM_LOCK);
-            r.delay(100);
-            r.keyPress(KeyEvent.VK_NUM_LOCK);
-            r.keyRelease(KeyEvent.VK_NUM_LOCK);
-            r.delay(100);
-        } catch (AWTException _) {
-        }
+    static Map<String, Integer> operatorOffsetMap() {
+        Map<String, Integer> keywordMap = new HashMap<>();
+        keywordMap.put("op", 2);
+        keywordMap.put("getlink", 1);
+        keywordMap.put("radar", 7);
+        keywordMap.put("uradar", 7);
+        keywordMap.put("lookup", 2);
+        keywordMap.put("packcolor", 1);
+        keywordMap.put("read", 1);
+        return keywordMap;
     }
 
-    static Map<String, String> replaceMidKey() {
+
+    static Map<String, String> operatorKeyMap() {
         Map<String, String> keywordMap = new HashMap<>();
         keywordMap.put("+", "add");
         keywordMap.put("-", "sub");
@@ -110,6 +108,7 @@ public class Utils {
         keywordMap.put("|", "or");
         keywordMap.put("&", "and");
         keywordMap.put("^", "xor");
+        keywordMap.put("=", "set");
         return keywordMap;
     }
 
@@ -136,8 +135,8 @@ public class Utils {
     }
 
     static boolean isCtrlCode(String codeLine) {
-        String[] simpleCommands = {"print(", "printchar(", "format(", "wait(", "ubind(", "stop(", "end(", "jump(", "jump2(", "printf("};
-        for (String command : simpleCommands) {
+        String[] keys = {"print(", "printchar(", "format(", "wait(", "ubind(", "stop(", "end(", "jump(", "jump2(", "printf("};
+        for (String command : keys) {
             if (codeLine.startsWith(command)) {
                 return true;
             }
@@ -149,12 +148,29 @@ public class Utils {
         System.err.println("\u001B[31m" + message + "\u001B[0m");
     }
 
-    static boolean isEndDotCtrl(int end, String expr) {
-        boolean b1 = end < expr.length() - 1 && end != -1 && expr.charAt(end + 1) == '.';
-        if (!b1) return false;
-        expr = expr.substring(end + 2);
-        return !(expr.startsWith("enable(") || expr.startsWith("config(")
-                || expr.startsWith("color(") || expr.startsWith("shoot(") || expr.startsWith("unpack("));
+    static int getEndDotCtrl(String expr, int start) {
+        int end = expr.indexOf(')', start);
+        if (end >= expr.length() - 1 || expr.charAt(end + 1) != '.') return end;
+        String[] keys = {"enable(", "config(", "color(", "shoot(", "unpack(", "pflush(", "dflush(", "write("};
+        while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
+            for (String key : keys) {
+                if (expr.startsWith(key, end + 2)) return end;
+            }
+            end = expr.indexOf(')', end + 1);
+        }
+        return end;
+    }
+
+    static String getDotCtrlBlock(String expr) {
+        String block;
+        int index = expr.length() - 1;
+        String[] keys = {"enable(", "config(", "color(", "shoot(", "unpack(", "pflush(", "dflush(", "write("};
+        for (String key : keys) {
+            int keyIndex = expr.indexOf(key);
+            if (keyIndex < index && keyIndex > 0) index = keyIndex;
+        }
+        block = expr.substring(0, index - 1);
+        return block;
     }
 
     /**
@@ -163,7 +179,7 @@ public class Utils {
      * @return 变量分离的字符串数组
      */
     public static String[] stringSplit(String str) {
-        str = str.replaceAll("\\s", "~"); // Replace all spaces with tilde placeholders
+        //str = str.replaceAll("\\s", "~"); // Replace all spaces with tilde placeholders
         ArrayList<String> tokens = new ArrayList<>();
         StringBuilder token = new StringBuilder();
 
@@ -192,6 +208,14 @@ public class Utils {
         return tokens.stream().map(s -> s.replace("~", " ")).toArray(String[]::new); // Replace tildes with spaces in the final output
     }
 
+    static boolean isSpecialControl(String codeLine) {
+        String[] keys = new String[]{"::", "}", "do", "for("};
+        for (String key : keys) {
+            if (codeLine.startsWith(key)) return true;
+        }
+        return false;
+    }
+
     /**
      * 处理运算符的优先级
      * 括号最高, 指数次之, 乘除位移再次之, 加减再次之, 比较垫底
@@ -209,7 +233,8 @@ public class Utils {
         LEFT_SHIFT("<<", 5), BITWISE_XOR("^", 2),
         GREATER_THAN(">", 2), LESS_THAN("<", 2),
         AND("&", 2), OR("|", 2),
-        LEFT_BRACKET("(", 10), RIGHT_BRACKET(")", 10); //括号优先级最高
+        LEFT_BRACKET("(", 10), RIGHT_BRACKET(")", 10),
+        ASSIGN("=", 1);
 
 
         final String value;

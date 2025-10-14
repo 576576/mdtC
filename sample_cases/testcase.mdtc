@@ -1,8 +1,1 @@
-block1.enable(false).shoot()
-
-block2.config(null).enable(1)
-block2.enable(1).config(null)
-
-b3.shoot(1).target(u1)
-
-b4.shoot(1).target(x,y).shoot(0).target(u2)
+format(14)

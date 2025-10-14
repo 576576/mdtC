@@ -4,6 +4,8 @@
       <w>dflush</w>
       <w>drawflush</w>
       <w>emod</w>
+      <w>getlink</w>
+      <w>idiv</w>
       <w>logn</w>
       <w>mdtc</w>
       <w>mdtcode</w>
