@@ -3,6 +3,7 @@ import java.io.*;
 import java.util.*;
 
 public class Utils {
+    private static final String versionTag = "0.7";
 
     static String readFile(String filePath) {
         StringBuilder content = new StringBuilder();
@@ -51,12 +52,13 @@ public class Utils {
 
     static void fileIO() {
         Scanner scanner = new Scanner(System.in);
-        System.out.print("MdtC Compiler> ");
+        System.out.println("MdtC Compiler v" + versionTag);
+        System.out.print("Enter .mdtc file path below.\n> ");
         String filePath = "";
         if (!Main.isDebug) filePath = scanner.nextLine();
         filePath = !filePath.isEmpty() ? filePath : Main.fileDefault;
 
-        System.out.println(filePath);
+        if (Main.isDebug) System.out.println(filePath);
         File inputFilePath = new File(filePath);
         String inputContent = readFile(filePath);
 
@@ -65,7 +67,7 @@ public class Utils {
         String outputFilePath = inputFilePath.getAbsolutePath().replace(".mdtc", ".mdtcode");
 
         writeFile(outputFilePath, convertedContent.toString());
-        System.out.println("Compile output at> " + outputFilePath);
+        System.out.println("Compile output at:\n" + outputFilePath);
         if (Main.openAfterCompile)
             openWithSystemExplorer(outputFilePath);
     }
@@ -210,7 +212,7 @@ public class Utils {
     }
 
     static boolean isSpecialControl(String codeLine) {
-        String[] keys = new String[]{"::", "}", "do{", "for(","if("};
+        String[] keys = new String[]{"::", "}", "do{", "for(", "if("};
         for (String key : keys) {
             if (codeLine.startsWith(key)) return true;
         }

@@ -3,6 +3,7 @@ s=link(i)
 g=block(2)*unit(3)*item(4)*liquid(5)*team(6)*pack(r,g,b,a)
 m=uradar()==radar(t5).target(player,ground).order(0).sort(maxHealth)
 
-
 ::点控制(有副作用)
-res=b1.sensor(@copper)+c1.read(bit2)
+res=b1.sensor(@lead)+c1.read(bit2)
+
+::pass

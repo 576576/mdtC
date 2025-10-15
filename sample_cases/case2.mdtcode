@@ -15,3 +15,6 @@ drawflush msg
 printflush msg
 unpackcolor r g b a color1
 write cell1 result x1
+print "666{0}yf{1}"
+format 6
+format cr1

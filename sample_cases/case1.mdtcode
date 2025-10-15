@@ -63,12 +63,6 @@ op mul mid.14 mid.13 mid.8
 op mul mid.15 mid.14 amid.7
 op mul mid.16 mid.15 amid.2
 op mul h mid.16 mid.3
-op add mid.1 x y
-op add mid.2 mid.1 z
-op add mid.3 mid.2 i
-op add mid.4 mid.3 j
-op add mid.5 mid.4 k
-op add l mid.5 h
 op min mid.1 3 x3
 op abs mid.2 c 0
 op sub mid.3 re 1

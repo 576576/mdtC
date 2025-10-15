@@ -471,9 +471,7 @@ public class MindustryFileConverter {
                     stdIOStream conditionStream = convertCodeLine(forParts[1]);
                     bashCache = operateStream.toStringArray();
                     bashCache.addAll(conditionStream.toStringArray());
-                } else {
-                    bashCache = convertCodeLine(bracketContent).toStringArray();
-                }
+                } else bashCache = convertCodeLine(bracketContent).toStringArray();
             }
             bashCache.removeLast();
             String[] conditionParts = bashCache.getLast().split(" ", 4);
@@ -523,7 +521,6 @@ public class MindustryFileConverter {
         }
 
         bashList.removeIf(line -> line.startsWith("::"));
-
         return new stdIOStream(bashList, expr);
     }
 
