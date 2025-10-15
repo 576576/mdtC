@@ -1,5 +1,4 @@
 import java.awt.*;
-import java.awt.event.KeyEvent;
 import java.io.*;
 import java.util.*;
 
@@ -156,7 +155,9 @@ public class Utils {
             for (String key : keys) {
                 if (expr.startsWith(key, end + 2)) return end;
             }
-            end = expr.indexOf(')', end + 1);
+            int endNext = expr.indexOf(')', end + 1);
+            if (endNext != -1) end = endNext;
+            else return end;
         }
         return end;
     }
@@ -209,7 +210,7 @@ public class Utils {
     }
 
     static boolean isSpecialControl(String codeLine) {
-        String[] keys = new String[]{"::", "}", "do", "for("};
+        String[] keys = new String[]{"::", "}", "do{", "for(","if("};
         for (String key : keys) {
             if (codeLine.startsWith(key)) return true;
         }

@@ -336,12 +336,7 @@ public class MindustryFileConverter {
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey() + "(")) {
                 int start = expr.indexOf(entry.getKey());
-                int end = expr.indexOf(')', start);
-                while (end < expr.length() - 1 && end != -1 && expr.charAt(end + 1) == '.') {
-                    int endIndex = expr.indexOf(')', end + 1);
-                    if (endIndex != -1) end = endIndex;
-                    else break;
-                }
+                int end = Utils.getEndDotCtrl(expr, start);
                 String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
                 String result = entry.getValue().apply(s);
                 bashList.add(result);
@@ -353,10 +348,7 @@ public class MindustryFileConverter {
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers_low.entrySet()) {
             while (expr.contains(entry.getKey() + "(")) {
                 int start = expr.indexOf(entry.getKey());
-                int end = expr.indexOf(')', start);
-                while (end < expr.length() - 1 && end != -1 && expr.charAt(end + 1) == '.') {
-                    end = expr.indexOf(')', end + 1);
-                }
+                int end = Utils.getEndDotCtrl(expr, start);
                 String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
                 String result = entry.getValue().apply(s);
                 bashList.add(result);
@@ -424,95 +416,74 @@ public class MindustryFileConverter {
 
     private static stdIOStream convertPreJump(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
+        bashList.removeIf(String::isEmpty);
         var ref = new Object() {
-            int line = 0;
             int tag = 0;
         };
-        ArrayList<Integer> lineNumList = new ArrayList<>();
-        bashList.removeIf(String::isEmpty);
-        for (int i = 0; i < bashList.size(); i++) {
-            String line = bashList.get(i);
-            if (line.startsWith("do{") || line.startsWith("for(") || line.startsWith("}")) {
-                lineNumList.add(i);
-            }
-        }
-        if (lineNumList.size() % 2 != 0) {
-            Utils.printRedError("Error: {} not match");
-            return stdIOStream.empty();
-        }
-        while (!lineNumList.isEmpty()) {
-            int lineNum = lineNumList.getFirst() + ref.line;
-            int lineNum2Index = 1;
-            for (int i = 1; i < lineNumList.size(); i++) {
-                String line = bashList.get(lineNumList.get(i));
-                if (line.startsWith("do{") || line.startsWith("for(")) lineNum2Index++;
-                else lineNum2Index--;
-                if (lineNum2Index == 0) {
-                    lineNum2Index = i;
-                    break;
-                }
-            }
-            int lineNum2 = lineNumList.get(lineNum2Index) + ref.line;
-            String line = bashList.get(lineNum), line2 = bashList.get(lineNum2);
 
-            if (line.startsWith("do{")) {
-                if (!line2.startsWith("}while(")) {
-                    Utils.printRedError("Error: {} not match at [" + lineNum + "," + lineNum2 + "]");
-                    return stdIOStream.empty();
+        String[] keysStart = {"do{", "for(", "if("};
+        String[] keysEnd = {"}while(", "}", "}"};
+        while (true) {
+            int matchIndex = 0, lineIndex = -1, line2Index = -1;
+            for (int i = 0; i < bashList.size(); i++) {
+                String line = bashList.get(i);
+                for (int j = 0; j < keysStart.length; j++) {
+                    String keyStart = keysStart[j], keyEnd = keysEnd[j];
+                    if (line.startsWith(keyStart)) {
+                        if (lineIndex == -1) lineIndex = i;
+                        matchIndex++;
+                    } else if (line.startsWith(keyEnd)) {
+                        if (matchIndex == 1) line2Index = i;
+                        matchIndex--;
+                    }
                 }
-                bashList.set(lineNum, "::PRESERVE-TAG#" + ref.tag);
+                if (line2Index != -1) break;
+            }
+            if (line2Index == -1) {
+                if (lineIndex != -1) {
+                    Utils.printRedError("Error: {} not match: No such operation.");
+                    return stdIOStream.empty();
+                } else break;
+            }
+
+            String line = bashList.get(lineIndex), line2 = bashList.get(line2Index);
+            ArrayList<String> bashCache;
+            int line2Offset = 0;
+            if (line.startsWith("do{")) {
+                bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
                 line2 = line2.substring(line2.indexOf("while(") + 6, line2.lastIndexOf(")"));
 
-                ArrayList<String> bashCache = convertCodeLine(line2).toStringArray();
-                bashCache.removeLast();
-
-                String[] conditionParts = bashCache.getLast().split(" ", 4);
-                String condition = conditionParts[1] + " " + conditionParts[3];
-                bashCache.removeLast();
-                bashCache.add("jump PRESERVE-TAG#" + ref.tag + " " + condition);
-
-                bashList.remove(lineNum2);
-                bashList.addAll(lineNum2, bashCache);
-                ref.line += bashCache.size() - 1;
-                ref.tag++;
-            } else if (line.startsWith("for(")) {
-                if (line2.startsWith("}while")) {
-                    Utils.printRedError("Error: {} not match at [" + lineNum + "," + lineNum2 + "]");
-                    return stdIOStream.empty();
-                }
-                String forContent = line.substring(line.indexOf("(") + 1, line.lastIndexOf(")"));
-                String[] forParts = forContent.split(";");
-                if (forParts.length != 3) {
-                    Utils.printRedError("Error: for() content not match");
-                    return stdIOStream.empty();
-                }
-                bashList.set(lineNum, "::PRESERVE-TAG#" + ref.tag);
-                ArrayList<String> initStream = convertCodeLine(forParts[0]).toStringArray();
-                bashList.addAll(lineNum, initStream);
-                ref.line += initStream.size();
-
-                stdIOStream operateStream = convertCodeLine(forParts[2]);
-                stdIOStream conditionStream = convertCodeLine(forParts[1]);
-                ArrayList<String> bashCache = operateStream.toStringArray();
-                bashCache.addAll(conditionStream.toStringArray());
-                bashCache.removeLast();
-
-                String[] conditionParts = bashCache.getLast().split(" ", 4);
-                String condition = conditionParts[1] + " " + conditionParts[3];
-                bashCache.removeLast();
-                bashCache.add("jump PRESERVE-TAG#" + ref.tag + " " + condition);
-
-                bashList.remove(lineNum2 + initStream.size());
-                bashList.addAll(lineNum2 + initStream.size(), bashCache);
-                ref.line += bashCache.size() - 1;
-                ref.tag++;
+                bashCache = convertCodeLine(line2).toStringArray();
             } else {
-                System.out.println(line);
-                Utils.printRedError("Error: {} not match: No such operation.");
-                return stdIOStream.empty();
+                String bracketContent = line.substring(line.indexOf("(") + 1, line.lastIndexOf(")"));
+                bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
+                if (line.startsWith("for(")) {
+                    String[] forParts = bracketContent.split(";");
+                    if (forParts.length != 3) {
+                        Utils.printRedError("Error: for() content not match");
+                        return stdIOStream.empty();
+                    }
+                    ArrayList<String> initStream = convertCodeLine(forParts[0]).toStringArray();
+                    bashList.addAll(lineIndex, initStream);
+                    line2Offset += initStream.size();
+
+                    stdIOStream operateStream = convertCodeLine(forParts[2]);
+                    stdIOStream conditionStream = convertCodeLine(forParts[1]);
+                    bashCache = operateStream.toStringArray();
+                    bashCache.addAll(conditionStream.toStringArray());
+                } else {
+                    bashCache = convertCodeLine(bracketContent).toStringArray();
+                }
             }
-            lineNumList.remove(lineNum2Index);
-            lineNumList.removeFirst();
+            bashCache.removeLast();
+            String[] conditionParts = bashCache.getLast().split(" ", 4);
+            String condition = conditionParts[1] + " " + conditionParts[3];
+            bashCache.removeLast();
+            bashCache.add("jump PRESERVE-TAG#" + ref.tag + " " + condition);
+
+            bashList.remove(line2Index + line2Offset);
+            bashList.addAll(line2Index + line2Offset, bashCache);
+            ref.tag++;
         }
         return stdIOStream.from(bashList);
     }

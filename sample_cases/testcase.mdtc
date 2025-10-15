@@ -1,1 +1,7 @@
-format(14)
+::条件
+::例：初始化
+if(init==0){
+mid=rand(100000)
+uflag=floor(mid)
+init=1
+}

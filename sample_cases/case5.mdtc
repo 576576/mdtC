@@ -1,14 +1,10 @@
-::扩展指令
-::标签跳转
+::扩展指令PAGE1
+::跳转
 jump2(+4)
 jump2(+max(t,5).^3-625)
 jump2(6)
 
-::printf
-printf("666{0}yf{1}",6,cr1)
-
-
-::跳转
+::循环
 ::例:钍堆防爆for
 for(e=0;e<@links;e=e+1){
 t=link(e)
@@ -24,3 +20,11 @@ case=(t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
 t.enable(case)
 e=e+1
 }while(e<@links)
+
+::条件
+::例：初始化
+if(init==0){
+mid=rand(100000)
+u.flag=floor(mid)
+init=1
+}

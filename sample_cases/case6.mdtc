@@ -1,0 +1,4 @@
+::扩展指令PAGE2
+
+::printf
+printf("666{0}yf{1}",6,cr1)

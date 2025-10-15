@@ -1,0 +1,3 @@
+print "666{0}yf{1}"
+format 6
+format cr1

@@ -1,1 +1,4 @@
-format 14
+op rand mid 100000
+op floor uflag mid
+set init 1
+jump 0 equal init 0
