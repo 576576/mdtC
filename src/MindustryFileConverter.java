@@ -13,26 +13,31 @@ public class MindustryFileConverter {
     public static stdIOStream convertCodeBlock(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
         bashList.add("::HEAD");
+        int refMax = 1;
         for (String line : codeBlock.split("\n")) {
             if (!line.trim().isEmpty()) {
-                stdIOStream convertedLine = convertCodeLine(line.trim());
+                stdIOStream convertedLine = convertCodeLine(stdIOStream.from(line.trim()));
                 bashList.addAll(convertedLine.toStringArray());
+                if (refMax < convertedLine.stat()) refMax = convertedLine.stat();
             }
         }
-        stdIOStream result_pre_jump = convertPreJump(stdIOStream.from(bashList));
+        stdIOStream result_pre_jump = convertPreJump(stdIOStream.from(bashList, refMax));
         return convertJump(result_pre_jump);
     }
 
-    private static stdIOStream convertCodeLine(String codeLine) {
-        if (Utils.isSpecialControl(codeLine)) return new stdIOStream(codeLine);
-        stdIOStream stdInput = stdIOStream.from(codeLine);
-        if (Utils.isCtrlCode(codeLine)) return convertCtrl(stdInput);
-        if (Utils.isDotCtrlCode(codeLine)) return convertDotCtrl(stdInput);
+    private static stdIOStream convertCodeLine(stdIOStream stream) {
+        String codeLine = stream.expr();
+        if (Utils.isSpecialControl(codeLine)) return stream;
+        if (Utils.isCtrlCode(codeLine)) return convertCtrl(stream);
+        if (Utils.isDotCtrlCode(codeLine)) return convertDotCtrl(stream);
 
-        stdIOStream result_dot_free = convertDot(stdInput);
-        stdIOStream result_front_free = convertFront(result_dot_free);
+        while (Utils.stringSplit(stream.expr()).length > 1) {
+            stream = convertDot(stream);
+            stream = convertFront(stream);
+            stream = convertMiddle(stream);
+        }
 
-        return convertMiddle(result_front_free);
+        return stream;
     }
 
     /**
@@ -52,9 +57,12 @@ public class MindustryFileConverter {
         funcHandlers.put("printchar", s -> "printchar " + s);
         funcHandlers.put("format", s -> "format " + s);
         funcHandlers.put("wait", s -> "wait " + s);
-        funcHandlers.put("ubind", s -> "ubind " + s);
         funcHandlers.put("stop", _ -> "stop");
         funcHandlers.put("end", _ -> "end");
+
+        funcHandlers.put("ubind", s -> "ubind " + s);
+        funcHandlers.put("uctrl", s -> "ucontrol " + Utils.padParams(s.replace(',', ' '), 6));
+
         funcHandlers.put("jump", s -> {
             String target;
             if (!s.contains(")")) {
@@ -88,7 +96,7 @@ public class MindustryFileConverter {
             String[] strSplit = Utils.stringSplit(s);
             if (strSplit.length > 1) s = "@counter=@counter" + s;
             else s = "@counter=" + s;
-            stdIOStream jump2stream = convertCodeLine(s);
+            stdIOStream jump2stream = convertCodeLine(stdIOStream.from(s));
             bashList.addAll(jump2stream.toStringArray());
             return "";
         });
@@ -101,6 +109,7 @@ public class MindustryFileConverter {
             }
             return "";
         });
+        funcHandlers.put("tag", s -> "::" + s);
 
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             if (expr.contains(entry.getKey() + "(")) {
@@ -124,10 +133,12 @@ public class MindustryFileConverter {
     private static stdIOStream convertDotCtrl(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
         var ref = new Object() {
+            int midNum = 1;
             String block = "";
         };
 
         Map<String, Function<String, String>> funcHandlers = new HashMap<>();
+        funcHandlers.put("ctrl", s -> "control " + Utils.padParams(s.replace(',', ' '), 5));
         funcHandlers.put("enable", s -> "control enabled " + ref.block + " " + Utils.padParams(s, 4));
         funcHandlers.put("config", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
         funcHandlers.put("color", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
@@ -164,10 +175,21 @@ public class MindustryFileConverter {
         ref.block = Utils.getDotCtrlBlock(expr);
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey() + "(")) {
-                int start = expr.indexOf(entry.getKey());
-                int end = Utils.getEndDotCtrl(expr, start);
+                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
                 String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
-                String result = entry.getValue().apply(s);
+                String[] splitList = Utils.stringSplit(s);
+                String midVariable;
+                if (splitList.length > 1 && !entry.getKey().equals("shoot")) {
+                    stdIOStream midStream = stdIOStream.from("mid." + ref.midNum + "=" + s, ref.midNum + 1);
+                    stdIOStream bashCache = convertCodeLine(midStream);
+                    bashList.addAll(bashCache.bash());
+                    midVariable = "mid." + ref.midNum;
+                    expr = expr.replace(s, midVariable);
+                    s = midVariable;
+                    end = Utils.getEndDotCtrl(expr, start);
+                    ref.midNum = bashCache.stat();
+                }
+                String result = entry.getValue().apply(s.trim());
                 bashList.add(result);
                 expr = expr.substring(0, start - 1) + expr.substring(end + 1);
             }
@@ -200,13 +222,21 @@ public class MindustryFileConverter {
                 String[] strSplit = Utils.stringSplit(expr.substring(0, start - 1));
                 ref.block = strSplit[strSplit.length - 1];
 
-                int end = expr.indexOf(')', start);
-                while (end < expr.length() - 1 && end != -1 && expr.charAt(end + 1) == '.') {
-                    end = expr.indexOf(')', end + 1);
-                }
+                int end = Utils.getEndBracket(expr, start + entry.getKey().length());
 
                 String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
-                String result = entry.getValue().apply(s);
+                String[] splitList = Utils.stringSplit(s);
+                String midVariable;
+                if (splitList.length > 1) {
+                    stdIOStream midStream = stdIOStream.from(s, ref.midNum);
+                    stdIOStream bashCache = convertCodeLine(midStream);
+                    ref.midNum = bashCache.stat();
+                    bashList.addAll(bashCache.bash());
+                    midVariable = "mid." + (ref.midNum - 1);
+                    expr = expr.replace(s, midVariable);
+                    s = midVariable;
+                }
+                String result = entry.getValue().apply(s.trim());
                 bashList.add(result);
                 expr = expr.substring(0, start - ref.block.length() - 1) + "mid." + ref.midNum + expr.substring(end + 1);
                 ref.midNum++;
@@ -338,6 +368,14 @@ public class MindustryFileConverter {
                 int start = expr.indexOf(entry.getKey());
                 int end = Utils.getEndDotCtrl(expr, start);
                 String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+                String[] splitList = Utils.stringSplit(s);
+                if (splitList.length > 1) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s));
+                    ref.midNum += bashCache.stat() - 1;
+                    bashList.addAll(bashCache.bash());
+                    expr = expr.replace(s, bashCache.expr());
+                    s = bashCache.expr();
+                }
                 String result = entry.getValue().apply(s);
                 bashList.add(result);
                 String regex = expr.substring(start, end + 1);
@@ -418,7 +456,7 @@ public class MindustryFileConverter {
         ArrayList<String> bashList = stream.bash();
         bashList.removeIf(String::isEmpty);
         var ref = new Object() {
-            int tag = 0;
+            int tag = stream.stat();
         };
 
         String[] keysStart = {"do{", "for(", "if("};
@@ -442,6 +480,7 @@ public class MindustryFileConverter {
             if (line2Index == -1) {
                 if (lineIndex != -1) {
                     Utils.printRedError("Error: {} not match: No such operation.");
+                    System.out.println(Arrays.deepToString(bashList.toArray()));
                     return stdIOStream.empty();
                 } else break;
             }
@@ -453,25 +492,43 @@ public class MindustryFileConverter {
                 bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
                 line2 = line2.substring(line2.indexOf("while(") + 6, line2.lastIndexOf(")"));
 
-                bashCache = convertCodeLine(line2).toStringArray();
+                bashCache = convertCodeLine(stdIOStream.from(line2)).toStringArray();
             } else {
                 String bracketContent = line.substring(line.indexOf("(") + 1, line.lastIndexOf(")"));
-                bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
                 if (line.startsWith("for(")) {
+                    bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
+
                     String[] forParts = bracketContent.split(";");
                     if (forParts.length != 3) {
                         Utils.printRedError("Error: for() content not match");
                         return stdIOStream.empty();
                     }
-                    ArrayList<String> initStream = convertCodeLine(forParts[0]).toStringArray();
+                    ArrayList<String> initStream = convertCodeLine(stdIOStream.from(forParts[0])).toStringArray();
                     bashList.addAll(lineIndex, initStream);
                     line2Offset += initStream.size();
 
-                    stdIOStream operateStream = convertCodeLine(forParts[2]);
-                    stdIOStream conditionStream = convertCodeLine(forParts[1]);
+                    stdIOStream operateStream = convertCodeLine(stdIOStream.from(forParts[2]));
+                    stdIOStream conditionStream = convertCodeLine(stdIOStream.from(forParts[1]));
                     bashCache = operateStream.toStringArray();
                     bashCache.addAll(conditionStream.toStringArray());
-                } else bashCache = convertCodeLine(bracketContent).toStringArray();
+
+                } else {
+                    ArrayList<String> initStream = convertCodeLine(stdIOStream.from(bracketContent)).toStringArray();
+                    initStream.removeLast();
+                    String[] conditionParts = initStream.getLast().split(" ", 4);
+                    Map<String, String> reverseMap = Utils.operatorReverseMap();
+
+                    String condition = reverseMap.get(conditionParts[1]) + " " + conditionParts[3];
+                    initStream.removeLast();
+                    initStream.add("jump PRESERVE-TAG#" + ref.tag + " " + condition);
+                    bashList.remove(lineIndex);
+                    bashList.addAll(lineIndex, initStream);
+
+                    line2Offset += initStream.size();
+                    bashList.set(line2Index + line2Offset - 1, "::PRESERVE-TAG#" + ref.tag);
+                    ref.tag++;
+                    continue;
+                }
             }
             bashCache.removeLast();
             String[] conditionParts = bashCache.getLast().split(" ", 4);
@@ -483,6 +540,7 @@ public class MindustryFileConverter {
             bashList.addAll(line2Index + line2Offset, bashCache);
             ref.tag++;
         }
+        if (Main.isDebug) bashList.forEach(System.out::println);
         return stdIOStream.from(bashList);
     }
 

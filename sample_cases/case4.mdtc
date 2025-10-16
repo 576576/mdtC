@@ -10,6 +10,7 @@ jump(func1).when(e<@links)
 
 ::拓展
 ::跳转(@counter)
+::[red]警告:jump2容易造成未定义行为
 jump2(+4)
 jump2(+max(t,5).^3-625)
 jump2(6)

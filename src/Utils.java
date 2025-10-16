@@ -3,7 +3,6 @@ import java.io.*;
 import java.util.*;
 
 public class Utils {
-    private static final String versionTag = "0.7";
 
     static String readFile(String filePath) {
         StringBuilder content = new StringBuilder();
@@ -52,7 +51,7 @@ public class Utils {
 
     static void fileIO() {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("MdtC Compiler v" + versionTag);
+        System.out.println("MdtC Compiler v" + Main.versionTag);
         System.out.print("Enter .mdtc file path below.\n> ");
         String filePath = "";
         if (!Main.isDebug) filePath = scanner.nextLine();
@@ -81,6 +80,18 @@ public class Utils {
         keywordMap.put("lookup", 2);
         keywordMap.put("packcolor", 1);
         keywordMap.put("read", 1);
+        return keywordMap;
+    }
+    
+    static Map<String,String> operatorReverseMap(){
+        Map<String, String> keywordMap = new HashMap<>();
+        keywordMap.put("equal", "notEqual");
+        keywordMap.put("notEqual", "equal");
+        keywordMap.put("lessThan", "greaterThanEq");
+        keywordMap.put("lessThanEq", "greaterThan");
+        keywordMap.put("greaterThan", "lessThanEq");
+        keywordMap.put("greaterThanEq", "lessThan");
+        keywordMap.put("strictEqual", "notEqual");
         return keywordMap;
     }
 
@@ -128,15 +139,16 @@ public class Utils {
     }
 
     static boolean isDotCtrlCode(String codeLine) {
+        String[] keys = {"ctrl", "enable", "config", "color", "shoot", "unpack", "pflush", "dflush", "write"};
         int equalsIndex = codeLine.indexOf('=');
-        int dotIndex = codeLine.indexOf(".");
+        int dotIndex = codeLine.indexOf("."), midNumIndex = codeLine.indexOf("mid.");
         int bracketIndex = codeLine.indexOf(')');
         if (dotIndex == -1 || bracketIndex == -1 || dotIndex > bracketIndex) return false;
-        else return equalsIndex == -1 || equalsIndex > dotIndex;
+        else return equalsIndex == -1 || (equalsIndex > dotIndex && dotIndex != (midNumIndex + 3));
     }
 
     static boolean isCtrlCode(String codeLine) {
-        String[] keys = {"print(", "printchar(", "format(", "wait(", "ubind(", "stop(", "end(", "jump(", "jump2(", "printf("};
+        String[] keys = {"print(", "printchar(", "format(", "wait(", "stop(", "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf("};
         for (String command : keys) {
             if (codeLine.startsWith(command)) {
                 return true;
@@ -150,14 +162,14 @@ public class Utils {
     }
 
     static int getEndDotCtrl(String expr, int start) {
-        int end = expr.indexOf(')', start);
+        int end = getEndBracket(expr, start);
         if (end >= expr.length() - 1 || expr.charAt(end + 1) != '.') return end;
         String[] keys = {"enable(", "config(", "color(", "shoot(", "unpack(", "pflush(", "dflush(", "write("};
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
             for (String key : keys) {
                 if (expr.startsWith(key, end + 2)) return end;
             }
-            int endNext = expr.indexOf(')', end + 1);
+            int endNext = getEndBracket(expr, end + 2);
             if (endNext != -1) end = endNext;
             else return end;
         }
@@ -217,6 +229,40 @@ public class Utils {
             if (codeLine.startsWith(key)) return true;
         }
         return false;
+    }
+
+    static int getEndBracket(String expr, int start) {
+        Stack<Integer> stack = new Stack<>();
+        for (int i = start; i < expr.length(); i++) {
+            if (expr.charAt(i) == '(') {
+                stack.push(i);
+            } else if (expr.charAt(i) == ')') {
+                if (stack.isEmpty()) return -1; // Mismatched closing bracket
+                stack.pop();
+                if (stack.isEmpty()) return i; // Found the matching closing bracket
+            }
+        }
+        return -1; // No matching closing bracket found
+    }
+
+    static boolean isTheBracket(String expr, int start, int end) {
+        Stack<Integer> stack = new Stack<>();
+        boolean countStart = false;
+        int o = 0;
+        for (int i = 0; i < expr.length(); i++) {
+            if (i == start) countStart = true;
+            if (expr.charAt(i) == '(') {
+                stack.push(i);
+                if (countStart) o++;
+            } else if (expr.charAt(i) == ')') {
+                if (countStart) o--;
+                if (stack.isEmpty()) return false; // Mismatched closing bracket
+                stack.pop();
+                if (countStart && o == 0) return i == end;
+                if (stack.isEmpty()) return false; // Found the matching closing bracket
+            }
+        }
+        return false; // No matching closing bracket found
     }
 
     /**

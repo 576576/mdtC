@@ -1,6 +1,7 @@
 public class Main {
     public static final boolean openAfterCompile = false;
     public static final boolean isDebug = false;
+    static final String versionTag = "0.8";
     public static String fileDefault = "sample_cases/testcase.mdtc";
 
     public static void main(String[] args) {
