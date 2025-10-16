@@ -1,4 +1,4 @@
-# MdtC v0.7-alpha
+# MdtC
 
 ## 说明
 
