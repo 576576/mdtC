@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 public class MindustryFileConverter {
 
-    public static void main(String[] args) {
+    static void main() {
 
     }
 

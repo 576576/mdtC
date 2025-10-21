@@ -1,19 +1,8 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Stack;
 
 public class ReversePolishNotation {
-    public static void main(String[] args) {
-        //测试用例
-        //String str = "1+2";//12+
-        //String str = "1+2*3-4*5-6+7*8-9"; //123*+45*-6-78*+9-
-        //String str = "a*(b-c*d)+e-f/g*(h+i*j-k)"; // abcd*-*e+fg/hij*+k-*-
-        //String str = "6*(5+(2+3)*8+3)"; //6523+8*+3+*
-        //String str = "a+b*c+(d*e+f)*g"; //abc*+de*f+g*f
-        //String str = "a2*(b-c*d)>=e-f//g*(h+i*j.^k)";
-        String str = "re>=1+isd2//5";
-
-        System.out.println(Arrays.toString(generateRpn(str)));
+    static void main() {
     }
 
     public static String[] generateRpn(String str) {
