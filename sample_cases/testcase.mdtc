@@ -1,6 +1,6 @@
 ::Test cases
 if(init==0){
-mid=rand(100000)
-u.flag=floor(mid)
-init=1
+	mid=rand(100000)
+	u.flag=floor(mid)
+	init=1
 }

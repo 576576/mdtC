@@ -17,8 +17,13 @@ public class MindustryFileConverter {
         for (String line : codeBlock.split("\n")) {
             if (!line.trim().isEmpty()) {
                 stdIOStream convertedLine = convertCodeLine(stdIOStream.from(line.trim()));
-                bashList.addAll(convertedLine.toStringArray());
                 if (refMax < convertedLine.stat()) refMax = convertedLine.stat();
+                if (!bashList.getLast().startsWith("::FUNC"))
+                    bashList.addAll(convertedLine.toStringArray());
+                else {
+                    bashList.add("::END");
+                    break;
+                }
             }
         }
         stdIOStream result_pre_jump = convertPreJump(stdIOStream.from(bashList, refMax));
@@ -459,8 +464,8 @@ public class MindustryFileConverter {
             int tag = stream.stat();
         };
 
-        String[] keysStart = {"do{", "for(", "if("};
-        String[] keysEnd = {"}while(", "}", "}"};
+        final String[] keysStart = {"do{", "for(", "if("};
+        final String[] keysEnd = {"}while(", "}", "}"};
         while (true) {
             int matchIndex = 0, lineIndex = -1, line2Index = -1;
             for (int i = 0; i < bashList.size(); i++) {
@@ -540,7 +545,6 @@ public class MindustryFileConverter {
             bashList.addAll(line2Index + line2Offset, bashCache);
             ref.tag++;
         }
-        if (Main.isDebug) bashList.forEach(System.out::println);
         return stdIOStream.from(bashList);
     }
 

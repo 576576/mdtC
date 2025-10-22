@@ -48,22 +48,37 @@ public class Utils {
             System.out.println("Desktop不受支持");
         }
     }
+    static void formatFile(){
+        IO.println("MdtC Compiler v" + Main.versionTag);
+        String filePath="";
+        if (!Main.isDebug) filePath = IO.readln("Enter .mdtc file path below.\n> ");
+        if (filePath.isEmpty()){
+            filePath=Main.fileDefault;
+            IO.println("Using file> "+filePath);
+        }
+        String inputContent = readFile(filePath);
 
-    static void fileIO() {
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("MdtC Compiler v" + Main.versionTag);
-        System.out.print("Enter .mdtc file path below.\n> ");
-        String filePath = "";
-        if (!Main.isDebug) filePath = scanner.nextLine();
-        filePath = !filePath.isEmpty() ? filePath : Main.fileDefault;
+        String convertedContent = MdtcToFormat.convertToFormat(inputContent);
+        if (convertedContent.isEmpty()){
+            IO.println("Nothing is formatted.");
+            return;
+        }
+        writeFile(filePath, convertedContent);
+        IO.println("Format successfully.");
+    }
 
-        if (Main.isDebug) System.out.println(filePath);
-        File inputFilePath = new File(filePath);
+    static void convertFile() {
+        IO.println("MdtC Compiler v" + Main.versionTag);
+        String filePath="";
+        if (!Main.isDebug) filePath = IO.readln("Enter .mdtc file path below.\n> ");
+        if (filePath.isEmpty()){
+            filePath=Main.fileDefault;
+            IO.println("Using file> "+filePath);
+        }
         String inputContent = readFile(filePath);
 
         stdIOStream convertedContent = MindustryFileConverter.convertCodeBlock(inputContent);
-
-        String outputFilePath = inputFilePath.getAbsolutePath().replace(".mdtc", ".mdtcode");
+        String outputFilePath = filePath.replace(".mdtc", ".mdtcode");
 
         writeFile(outputFilePath, convertedContent.toString());
         System.out.println("Compile output at:\n" + outputFilePath);
@@ -149,11 +164,7 @@ public class Utils {
 
     static boolean isCtrlCode(String codeLine) {
         String[] keys = {"print(", "printchar(", "format(", "wait(", "stop(", "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf("};
-        for (String command : keys) {
-            if (codeLine.startsWith(command)) {
-                return true;
-            }
-        }
+        for (String command : keys) if (codeLine.startsWith(command)) return true;
         return false;
     }
 
