@@ -6,7 +6,7 @@ public class MdtcToFormat {
     }
 
     public static String convertToFormat(String codeBlock) {
-        final String[] keysStart = {"do{", "for(", "if("};
+        final String[] keysStart = {"do{", "for(", "if(","function ","repeat("};
         final String[] keysEnd = {"}while(", "}"};
         final String[] lines = codeBlock.split("\n");
         int matchIndex = 0;

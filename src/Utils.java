@@ -1,8 +1,13 @@
 import java.awt.*;
 import java.io.*;
 import java.util.*;
+import java.util.List;
 
 public class Utils {
+    static void main() {
+        String str = "status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)";
+        IO.println(Arrays.toString(stringSplit(str)));
+    }
 
     static String readFile(String filePath) {
         StringBuilder content = new StringBuilder();
@@ -48,18 +53,19 @@ public class Utils {
             System.out.println("Desktop不受支持");
         }
     }
-    static void formatFile(){
+
+    static void formatFile() {
         IO.println("MdtC Compiler v" + Main.versionTag);
-        String filePath="";
+        String filePath = "";
         if (!Main.isDebug) filePath = IO.readln("Enter .mdtc file path below.\n> ");
-        if (filePath.isEmpty()){
-            filePath=Main.fileDefault;
-            IO.println("Using file> "+filePath);
+        if (filePath.isEmpty()) {
+            filePath = Main.fileDefault;
+            IO.println("Using file> " + filePath);
         }
         String inputContent = readFile(filePath);
 
         String convertedContent = MdtcToFormat.convertToFormat(inputContent);
-        if (convertedContent.isEmpty()){
+        if (convertedContent.isEmpty()) {
             IO.println("Nothing is formatted.");
             return;
         }
@@ -69,11 +75,11 @@ public class Utils {
 
     static void convertFile() {
         IO.println("MdtC Compiler v" + Main.versionTag);
-        String filePath="";
+        String filePath = "";
         if (!Main.isDebug) filePath = IO.readln("Enter .mdtc file path below.\n> ");
-        if (filePath.isEmpty()){
-            filePath=Main.fileDefault;
-            IO.println("Using file> "+filePath);
+        if (filePath.isEmpty()) {
+            filePath = Main.fileDefault;
+            IO.println("Using file> " + filePath);
         }
         String inputContent = readFile(filePath);
 
@@ -97,8 +103,8 @@ public class Utils {
         keywordMap.put("read", 1);
         return keywordMap;
     }
-    
-    static Map<String,String> operatorReverseMap(){
+
+    static Map<String, String> operatorReverseMap() {
         Map<String, String> keywordMap = new HashMap<>();
         keywordMap.put("equal", "notEqual");
         keywordMap.put("notEqual", "equal");
@@ -154,12 +160,9 @@ public class Utils {
     }
 
     static boolean isDotCtrlCode(String codeLine) {
-        String[] keys = {"ctrl", "enable", "config", "color", "shoot", "unpack", "pflush", "dflush", "write"};
-        int equalsIndex = codeLine.indexOf('=');
-        int dotIndex = codeLine.indexOf("."), midNumIndex = codeLine.indexOf("mid.");
-        int bracketIndex = codeLine.indexOf(')');
-        if (dotIndex == -1 || bracketIndex == -1 || dotIndex > bracketIndex) return false;
-        else return equalsIndex == -1 || (equalsIndex > dotIndex && dotIndex != (midNumIndex + 3));
+        final String[] keys = {".ctrl", ".enable", ".config", ".color", ".shoot", ".unpack", ".pflush", ".dflush", ".write"};
+        for (String command : keys) if (codeLine.contains(command)) return true;
+        return false;
     }
 
     static boolean isCtrlCode(String codeLine) {
@@ -205,7 +208,6 @@ public class Utils {
      * @return 变量分离的字符串数组
      */
     public static String[] stringSplit(String str) {
-        //str = str.replaceAll("\\s", "~"); // Replace all spaces with tilde placeholders
         ArrayList<String> tokens = new ArrayList<>();
         StringBuilder token = new StringBuilder();
 
@@ -214,8 +216,8 @@ public class Utils {
             boolean isOperator = false;
             for (Operator o : Operator.values()) {
                 if (str.startsWith(o.value, i)) {
-                    if (!token.isEmpty()) {
-                        tokens.add(token.toString());
+                    if (!token.toString().trim().isEmpty()) {
+                        tokens.add(token.toString().trim());
                         token = new StringBuilder();
                     }
                     tokens.add(o.value);
@@ -224,14 +226,53 @@ public class Utils {
                     break;
                 }
             }
-            if (!isOperator) {
-                token.append(c);
+            if (!isOperator) token.append(c);
+        }
+        if (!token.toString().trim().isEmpty())
+            tokens.add(token.toString().trim());
+        return tokens.toArray(String[]::new);
+    }
+
+    static String[] stringSplitPro(String str) {
+        final String[] keys = {".sensor", ".read"};
+        var stringSplit = stringSplit(str);
+        ArrayList<String> tokens = new ArrayList<>(List.of(stringSplit));
+        for (int i = 1; i < tokens.size(); i++) {
+            String token_now = tokens.get(i), token_former;
+            if (token_now.equals("(")) {
+                token_former = tokens.get(i - 1);
+                for (var key : keys) {
+                    if (token_former.endsWith(key)) {
+                        tokens.remove(i - 1);
+                        tokens.add(i - 1, key);
+                        tokens.add(i - 1, token_former.substring(0, token_former.indexOf(key)));
+                        i = i + 2;
+                        break;
+                    }
+                }
             }
         }
-        if (!token.isEmpty()) {
-            tokens.add(token.toString());
+        return tokens.toArray(String[]::new);
+    }
+
+    static String stringOf(String[] arr) {
+        return Arrays.stream(arr).reduce("", (a, b) -> a + b);
+    }
+
+    static String listToCodeBlock(ArrayList<String> bashList) {
+        return bashList.stream().reduce("", (a, b) -> a + "\n" + b);
+    }
+
+    static String replaceReserve(String s, String[] keys) {
+        var splitList = stringSplitPro(s);
+        for (int i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            for (int j = 0; j < splitList.length; j++) {
+                if (splitList[j].equals(key))
+                    splitList[j] = "ARG#" + i;
+            }
         }
-        return tokens.stream().map(s -> s.replace("~", " ")).toArray(String[]::new); // Replace tildes with spaces in the final output
+        return stringOf(splitList);
     }
 
     static boolean isSpecialControl(String codeLine) {
@@ -254,26 +295,6 @@ public class Utils {
             }
         }
         return -1; // No matching closing bracket found
-    }
-
-    static boolean isTheBracket(String expr, int start, int end) {
-        Stack<Integer> stack = new Stack<>();
-        boolean countStart = false;
-        int o = 0;
-        for (int i = 0; i < expr.length(); i++) {
-            if (i == start) countStart = true;
-            if (expr.charAt(i) == '(') {
-                stack.push(i);
-                if (countStart) o++;
-            } else if (expr.charAt(i) == ')') {
-                if (countStart) o--;
-                if (stack.isEmpty()) return false; // Mismatched closing bracket
-                stack.pop();
-                if (countStart && o == 0) return i == end;
-                if (stack.isEmpty()) return false; // Found the matching closing bracket
-            }
-        }
-        return false; // No matching closing bracket found
     }
 
     /**

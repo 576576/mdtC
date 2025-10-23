@@ -305,7 +305,7 @@
         "type": "ulocate",
         "keyword": [],
         "keyword_convert": [],
-        "sample_input": "bd=ulocate(ore).ore(@lead)",
+        "sample_input": "bd.ulocate(ore).ore(@lead)",
         "sample_output": "ulocate ore core 0 @lead bd.x bd.y bd.f bd",
         "desc": "单位地形探测:默认参数填充"
     }

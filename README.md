@@ -121,4 +121,42 @@ e=e+1
 
 
 ### 6. 绘图
-`@todo`
+```githubexpressionlanguage
+::仅简单参数传递
+draw(clear)
+draw(image,0,0,@copper,32,0,0)
+```
+
+
+### 7. 函数
+`@todo`  
+函数体应定义于主代码后, 分为有副作用和无副作用两种  
+定义时应指定输入参数和返回值名(void为无返回值)  
+调用时使用func().args()调用
+```githubexpressionlanguage
+::示例定义(无副作用)
+::例:单位绑定控制
+function void onebind(u){
+::init
+ubind(u.type)
+u=@unit
+
+ubind(u)
+jump(init).when(u.sensor(@dead)!=0)
+u.cer=u.sensor(@controller)
+jump(break).when(u.cer==@unit)
+jump(init).when(u.cer!=@this)
+jump(init).when(u.sensor(@flag)!=u.fx)
+
+::break
+uctrl(flag,u.fx)
+jump2(bind.end)
+}
+
+
+::示例定义(有副作用)
+::例:钍堆安全
+function status isReactorSafe(th_reactor){
+status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)
+}
+```

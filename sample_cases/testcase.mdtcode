@@ -1,4 +1,7 @@
 jump 4 notEqual init 0
 op rand mid 100000
-u.flag=floor(mid)
+op floor u.flag mid
 set init 1
+print "Hello world"
+print "\n"
+op add s m 1

@@ -15,7 +15,7 @@ op sub @counter mid.3 625
 set @counter 6
 jump 19 notEqual init 0
 op rand mid 100000
-u.flag=floor(mid)
+op floor u.flag mid
 set init 1
 set e 0
 getlink t e

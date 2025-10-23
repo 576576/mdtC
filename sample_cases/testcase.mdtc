@@ -4,3 +4,13 @@ if(init==0){
 	u.flag=floor(mid)
 	init=1
 }
+println("Hello world")
+s=plus1(m)
+
+function void println(str){
+	print(str)
+	print("\n")
+}
+function s plus1(m){
+	s=m+1
+}

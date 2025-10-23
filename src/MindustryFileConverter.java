@@ -1,33 +1,127 @@
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 public class MindustryFileConverter {
+    public static Map<String, stdIOStream> funcMap = new HashMap<>();
 
     static void main() {
-
+        String string = "u.flag=floor(mid)";
+        System.out.println(convertCodeLine(stdIOStream.from(string)));
     }
 
     public static stdIOStream convertCodeBlock(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
+
         bashList.add("::HEAD");
+
+        var funcStartIndex = codeBlock.indexOf("\nfunction");
+        if (funcStartIndex != -1) {
+            String funcBlock = codeBlock.substring(funcStartIndex);
+            codeBlock = codeBlock.substring(0, funcStartIndex);
+
+            convertFunc(funcBlock);
+            codeBlock = insertFunc(codeBlock);
+        }
+
         int refMax = 1;
         for (String line : codeBlock.split("\n")) {
             if (!line.trim().isEmpty()) {
                 stdIOStream convertedLine = convertCodeLine(stdIOStream.from(line.trim()));
-                if (refMax < convertedLine.stat()) refMax = convertedLine.stat();
-                if (!bashList.getLast().startsWith("::FUNC"))
-                    bashList.addAll(convertedLine.toStringArray());
-                else {
-                    bashList.add("::END");
-                    break;
-                }
+                refMax = Math.max(refMax, convertedLine.stat());
+                bashList.addAll(convertedLine.toStringArray());
             }
         }
-        stdIOStream result_pre_jump = convertPreJump(stdIOStream.from(bashList, refMax));
+        stdIOStream result_clear = codeClear(stdIOStream.from(bashList, refMax));
+        stdIOStream result_pre_jump = convertPreJump(result_clear);
         return convertJump(result_pre_jump);
+    }
+
+    /**
+     * 将函数块分离到函数,暂存于funcMap
+     *
+     */
+    private static void convertFunc(String funcBlock) {
+        final String entryString = "function";
+        final String[] keysJump = {"do{", "for(", "if("};
+        ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
+        ArrayList<String> bashCache = new ArrayList<>();
+        int matchIndex = 0;
+        String funcName = "", returnValue = "";
+        String funcArgs = "";
+        for (String bash : bashList) {
+            if (bash.startsWith("}")) {
+                matchIndex--;
+                if (matchIndex == 0) {
+                    String ioVariables = returnValue + " " + funcArgs;
+                    String[] ioVarList = ioVariables.split(" ");
+                    bashCache.replaceAll(s -> Utils.replaceReserve(s, ioVarList));
+                    stdIOStream funcStream = stdIOStream.from(bashCache,
+                            returnValue.startsWith("void") ? 0 : 1);
+                    funcMap.putIfAbsent(funcName, funcStream);
+                    bashCache = new ArrayList<>();
+                }
+            }
+
+            if (matchIndex > 0) bashCache.add(bash);
+
+            if (bash.startsWith(entryString)) {
+                String[] functionHead = bash.split(" ");
+                if (functionHead.length < 3) {
+                    Utils.printRedError("Bad definition of function <anonymous>");
+                    return;
+                }
+                returnValue = functionHead[1];
+                int argsStart = functionHead[2].indexOf("(");
+                funcName = functionHead[2].substring(0, argsStart + 1);
+                funcArgs = functionHead[2]
+                        .substring(argsStart + 1, Utils.getEndBracket(functionHead[2], argsStart))
+                        .replace(',', ' ');
+                matchIndex++;
+            }
+            for (var key : keysJump)
+                if (bash.startsWith(key)) {
+                    matchIndex++;
+                    break;
+                }
+        }
+    }
+
+    /**
+     * 将函数转内嵌到代码块
+     *
+     * @return {@code stdIOStream}
+     */
+    private static String insertFunc(String codeBlock) {
+        var ref = new Object() {
+            int midNum = 1;
+        };
+        ArrayList<String> bashList = new ArrayList<>(List.of(codeBlock.split("\n")));
+        ArrayList<String> bashCache = new ArrayList<>();
+        for (String bash : bashList) {
+            for (var func : funcMap.entrySet()) {
+                var funcKey = func.getKey();
+                while (bash.contains(funcKey)) {
+                    var funcBody = func.getValue().bash();
+                    int funcStat = func.getValue().stat();
+                    int start = bash.indexOf(funcKey);
+                    int end = Utils.getEndBracket(bash, start);
+                    ArrayList<String> varsName = new ArrayList<>(List.of(bash.substring(start + funcKey.length(), end).split(",")));
+                    String returnName = funcStat == 1 ? "FUNC." + ref.midNum : "FUNC.void";
+                    varsName.addFirst(returnName);
+                    for (int j = 0; j < varsName.size(); j++) {
+                        int finalJ = j;
+                        funcBody.replaceAll(s -> s.replace("ARG#" + finalJ, varsName.get(finalJ)));
+                    }
+                    bashCache.addAll(funcBody);
+                    bash = bash.substring(0, start) + returnName + bash.substring(end + 1);
+                    ref.midNum++;
+                }
+            }
+            bash = bash.replaceAll("FUNC.void", "");
+
+            if (!bash.trim().isEmpty()) bashCache.add(bash);
+        }
+        return Utils.listToCodeBlock(bashCache);
     }
 
     private static stdIOStream convertCodeLine(stdIOStream stream) {
@@ -42,7 +136,7 @@ public class MindustryFileConverter {
             stream = convertMiddle(stream);
         }
 
-        return stream;
+        return codeClear(stream);
     }
 
     /**
@@ -67,6 +161,8 @@ public class MindustryFileConverter {
 
         funcHandlers.put("ubind", s -> "ubind " + s);
         funcHandlers.put("uctrl", s -> "ucontrol " + Utils.padParams(s.replace(',', ' '), 6));
+
+        funcHandlers.put("draw", s -> "draw " + Utils.padParams(s.replace(',', ' '), 7));
 
         funcHandlers.put("jump", s -> {
             String target;
@@ -131,7 +227,7 @@ public class MindustryFileConverter {
     /**
      * {@code DotCtrlCode} 为无副作用的以.形式后接调用函数.
      * {@code DotCtrlCode} 有效函数名为:
-     * enable shoot config color unpack dflush pflush
+     * enable shoot config color unpack dflush pflush ulocate
      *
      * @return {@code stdIOStream}
      */
@@ -163,6 +259,25 @@ public class MindustryFileConverter {
                 }
             }
             return "control " + ctrlType + " " + ref.block + " " + Utils.padParams(target + " " + shooting, 4);
+        });
+
+        funcHandlers.put("ulocate", s -> {
+            if (s.isEmpty()) return "control shoot " + ref.block + " 0 0 0 0";
+            String[] parts = s.split("\\.");
+            String locateType, ore = "null", building = "1", enemy = "0";
+            if (!s.contains(")")) locateType = s;
+            else locateType = s.substring(0, s.indexOf(")"));
+
+            for (String part : parts) {
+                if (!part.endsWith(")")) part = part + ")";
+                String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+
+                if (bracketContent.isEmpty()) continue;
+                if (part.startsWith("ore(")) ore = bracketContent;
+                else if (part.startsWith("building(")) building = bracketContent;
+                else if (part.startsWith("enemy")) enemy = bracketContent;
+            }
+            return "ulocate " + locateType + " " + building + " " + enemy + " " + ore + " " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
         });
 
         funcHandlers.put("unpack", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
@@ -418,8 +533,8 @@ public class MindustryFileConverter {
         var ref = new Object() {
             int midNum = stream.stat();
         };
-        Map<String, String> operatorMap = Utils.operatorKeyMap();
-        Map<String, Integer> offsetMap = Utils.operatorOffsetMap();
+        final Map<String, String> operatorMap = Utils.operatorKeyMap();
+        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap();
 
         for (String token : rpnArray) {
             if (operatorMap.containsKey(token)) {
@@ -457,6 +572,35 @@ public class MindustryFileConverter {
         return new stdIOStream(bashList, expr.toString());
     }
 
+    /**
+     * 简化带有set的代码行
+     */
+    private static stdIOStream codeClear(stdIOStream stream) {
+        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap();
+        ArrayList<String> bashList = stream.bash();
+        if (bashList.isEmpty()) return stdIOStream.empty();
+        for (int i = 1; i < bashList.size(); i++) {
+            var bashLast = bashList.get(i);
+            if (bashLast.startsWith("set ")) {
+                String[] setInfos = bashLast.split(" ");
+                String var0 = setInfos[1], midVar = setInfos[2];
+                String bashFormer = bashList.get(i - 1);
+                int ctrlOffset = offsetMap.getOrDefault(bashFormer.split(" ")[0], -1);
+                if (ctrlOffset != -1 && bashFormer.split(" ")[ctrlOffset].equals(midVar)) {
+                    bashList.set(i - 1, bashFormer.replace(midVar, var0));
+                    bashList.remove(i);
+                    i--;
+                }
+            }
+        }
+        return stdIOStream.from(bashList, stream.stat());
+    }
+
+    /**
+     * 转换if/for/while 为原生的jump
+     *
+     * @return {@code stdIOStream}
+     */
     private static stdIOStream convertPreJump(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
         bashList.removeIf(String::isEmpty);
@@ -465,13 +609,12 @@ public class MindustryFileConverter {
         };
 
         final String[] keysStart = {"do{", "for(", "if("};
-        final String[] keysEnd = {"}while(", "}", "}"};
+        final String keyEnd = "}";
         while (true) {
             int matchIndex = 0, lineIndex = -1, line2Index = -1;
             for (int i = 0; i < bashList.size(); i++) {
                 String line = bashList.get(i);
-                for (int j = 0; j < keysStart.length; j++) {
-                    String keyStart = keysStart[j], keyEnd = keysEnd[j];
+                for (String keyStart : keysStart) {
                     if (line.startsWith(keyStart)) {
                         if (lineIndex == -1) lineIndex = i;
                         matchIndex++;
@@ -485,7 +628,7 @@ public class MindustryFileConverter {
             if (line2Index == -1) {
                 if (lineIndex != -1) {
                     Utils.printRedError("Error: {} not match: No such operation.");
-                    System.out.println(Arrays.deepToString(bashList.toArray()));
+                    IO.println(Arrays.deepToString(bashList.toArray()));
                     return stdIOStream.empty();
                 } else break;
             }
@@ -518,8 +661,8 @@ public class MindustryFileConverter {
                     bashCache.addAll(conditionStream.toStringArray());
 
                 } else {
-                    ArrayList<String> initStream = convertCodeLine(stdIOStream.from(bracketContent)).toStringArray();
-                    initStream.removeLast();
+                    ArrayList<String> initStream = convertCodeLine(stdIOStream.from(bracketContent)).bash();
+//                    initStream.removeLast();
                     String[] conditionParts = initStream.getLast().split(" ", 4);
                     Map<String, String> reverseMap = Utils.operatorReverseMap();
 
@@ -535,7 +678,7 @@ public class MindustryFileConverter {
                     continue;
                 }
             }
-            bashCache.removeLast();
+//            bashCache.removeLast();
             String[] conditionParts = bashCache.getLast().split(" ", 4);
             String condition = conditionParts[1] + " " + conditionParts[3];
             bashCache.removeLast();
@@ -548,6 +691,11 @@ public class MindustryFileConverter {
         return stdIOStream.from(bashList);
     }
 
+    /**
+     * 将带标签的jump相对跳转转化为绝对跳转
+     *
+     * @return {@code stdIOStream}
+     */
     private static stdIOStream convertJump(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();

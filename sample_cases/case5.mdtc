@@ -1,1 +1,22 @@
-::扩展指令PAGE1
+::函数
+::示例使用
+println("Hello world")
+for(e=0;e<@links;e=e+1){
+	t=link(e)
+	t.enable(isReactorSafe(t))
+}
+
+
+::示例定义(无副作用)
+function void println(str){
+	print(str)
+	print("\n")
+}
+
+::示例定义(有副作用)
+::例:钍堆安全
+function status isReactorSafe(th_reactor){
+	status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)
+}
+
+::pass
