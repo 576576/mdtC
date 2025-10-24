@@ -1,0 +1,9 @@
+getlink u0 e
+op add e e 1
+getlink u1 e
+op add e e 1
+getlink u2 e
+op add e e 1
+op add FUNC.1 FUNC.1 "\n"
+op add FUNC.1 FUNC.1 "\n"
+op add str FUNC.1 "\n"

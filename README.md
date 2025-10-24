@@ -1,17 +1,34 @@
 # MdtC
+Version: `1.0`
 
-## 说明
+本转换器用于将类Java代码转为mindustry处理器代码.  
+输入: 由类java语言(aka.`mdtc`)编写,`.mdtc`后缀文件.  
+输出: 用于Mindustry处理器的语句输出到`.mdtcode`.
 
-本转换器用于将类c代码转为mindustry处理器代码.  
-本转换器(也被称作`MdtC Compiler`)输入类表达式语言编写的`.mdtc`文件,并将其转换为适用于Mindustry处理器的语句输出到`.mdtcode`.
+### *查看这些示例快速开始*
+- [钍堆防爆](sample_cases/failsafe_钍堆.mdtc)
+- [采矿逻辑-5单位max](sample_cases/mine%20u5.mdtc)
+
 
 ### TodoList
-函数体预定义
-> 初始版本详见[这里](./readme_original.txt)
+- 完善代码检查/自动补全
+- 支持模块导入
+- 附件为游戏模组
 
+> 初始版本README见[这里](./readme_original.txt)
 ---
 
 ## 功能
+
+### 0.注释和标签
+```githubexpressionlanguage
+::这是注释,也是标签
+::jump必须绑定标签,eg:
+::jump(这是注释,也是标签)
+::没有指定标签的jump会跳到DEFAULT标签
+::代码头尾自带HEAD和END标签
+```
+
 ### 1. 赋值
 ```githubexpressionlanguage
 x0="Hello World"
@@ -52,6 +69,7 @@ end()
 b1.enable(false).config(null).color(0)
 b2.shoot().target(x,y)
 b2.shoot(st).target(u1).config(@copper)
+c.ulocate(turret).enemy(1)
 msg.pflush().dflush()
 color1.unpack(r,g,b,a)
 result.write(cell1,x1)
@@ -85,6 +103,7 @@ case= (t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
 t.enable(case)
 e=e+1
 jump(func1).when(e<@links)
+e=0
 ```
 ```githubexpressionlanguage
 ::拓展
@@ -132,7 +151,7 @@ draw(image,0,0,@copper,32,0,0)
 `@todo`  
 函数体应定义于主代码后, 分为有副作用和无副作用两种  
 定义时应指定输入参数和返回值名(void为无返回值)  
-调用时使用func().args()调用
+调用时使用funcName(funcArgs)调用
 ```githubexpressionlanguage
 ::示例定义(无副作用)
 ::例:单位绑定控制
@@ -160,3 +179,24 @@ function status isReactorSafe(th_reactor){
 status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)
 }
 ```
+输出: [`case5.mdtcode`](./sample_cases/case5.mdtcode)
+
+
+### 8. 重复
+对代码段多次重复
+```githubexpressionlanguage
+::repeat使用示例
+repeat(u,3){
+	u=link(e)
+	e=e+1
+}
+str=strln3("sayounara")
+
+
+function str strln3(str){
+	repeat(3){
+		str=str+"\n"
+	}
+}
+```
+输出: [`case6.mdtcode`](./sample_cases/case6.mdtcode)

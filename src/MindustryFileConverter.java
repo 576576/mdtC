@@ -5,22 +5,32 @@ public class MindustryFileConverter {
     public static Map<String, stdIOStream> funcMap = new HashMap<>();
 
     static void main() {
-        String string = "u.flag=floor(mid)";
-        System.out.println(convertCodeLine(stdIOStream.from(string)));
+        String string = "map.size.lg=lg(ARG.1)";
+        IO.println(convertFront(stdIOStream.from(string)));
     }
 
     public static stdIOStream convertCodeBlock(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
 
-        bashList.add("::HEAD");
+        codeBlock = "::HEAD\n" + codeBlock;
+        codeBlock = unfoldRepeat(codeBlock);
 
         var funcStartIndex = codeBlock.indexOf("\nfunction");
         if (funcStartIndex != -1) {
             String funcBlock = codeBlock.substring(funcStartIndex);
             codeBlock = codeBlock.substring(0, funcStartIndex);
 
-            convertFunc(funcBlock);
+            Utils.convertFunc(funcBlock);
             codeBlock = insertFunc(codeBlock);
+        }
+
+        if (Main.generatePrimeCode) {
+            String fileAbs = Utils.filePathAbs, filePath = fileAbs;
+            if (!fileAbs.endsWith("_prime.mdtc"))
+                filePath = fileAbs.replace(".mdtc", "_prime.mdtc");
+            var writeContent = MdtcToFormat.convertToFormat(codeBlock);
+            Utils.writeFile(filePath, writeContent);
+            IO.println("PrimeCode output at:\n" + filePath);
         }
 
         int refMax = 1;
@@ -31,59 +41,94 @@ public class MindustryFileConverter {
                 bashList.addAll(convertedLine.toStringArray());
             }
         }
+        bashList.add("::END");
+        bashList.add("end");
+
         stdIOStream result_clear = codeClear(stdIOStream.from(bashList, refMax));
         stdIOStream result_pre_jump = convertPreJump(result_clear);
         return convertJump(result_pre_jump);
     }
 
     /**
-     * 将函数块分离到函数,暂存于funcMap
-     *
+     * 展开repeat块
      */
-    private static void convertFunc(String funcBlock) {
-        final String entryString = "function";
+    private static String unfoldRepeat(String codeBlock) {
+        var ref = new Object() {
+            int midNum = 1;
+        };
+        final String keyStart = "repeat(", keyEnd = "}";
         final String[] keysJump = {"do{", "for(", "if("};
-        ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
+        ArrayList<String> bashList = new ArrayList<>(List.of(codeBlock.split("\n")));
         ArrayList<String> bashCache = new ArrayList<>();
-        int matchIndex = 0;
-        String funcName = "", returnValue = "";
-        String funcArgs = "";
-        for (String bash : bashList) {
-            if (bash.startsWith("}")) {
+        bashList.replaceAll(String::trim);
+        ArrayList<String> preserveTags;
+        String preserveVar = "";
+        int matchIndex = 0, repeatRoutes = 0;
+        int repeatStart = 0;
+        boolean entryFound = false;
+        for (int i = 0; i < bashList.size(); i++) {
+            String bash = bashList.get(i);
+            if (bash.startsWith(keyEnd)) {
                 matchIndex--;
+                if (!entryFound) continue;
                 if (matchIndex == 0) {
-                    String ioVariables = returnValue + " " + funcArgs;
-                    String[] ioVarList = ioVariables.split(" ");
-                    bashCache.replaceAll(s -> Utils.replaceReserve(s, ioVarList));
-                    stdIOStream funcStream = stdIOStream.from(bashCache,
-                            returnValue.startsWith("void") ? 0 : 1);
-                    funcMap.putIfAbsent(funcName, funcStream);
+                    preserveTags = new ArrayList<>(bashCache.stream().
+                            filter(line -> line.startsWith("::")).toList());
+                    preserveTags.replaceAll(s -> s.substring(2));
+
+                    ArrayList<String> tagsList = preserveTags;
+                    var varList = new ArrayList<>(List.of(new String[]{preserveVar}));
+                    bashCache.replaceAll(s -> Utils.replaceReserve(s, varList, tagsList));
+
+                    ArrayList<String> bashTo, bashToAdd = new ArrayList<>();
+                    String finalPreserveVar = preserveVar;
+                    for (int j = 0; j < repeatRoutes; j++) {
+                        bashTo = new ArrayList<>(bashCache);
+                        int finalJ = j;
+
+                        bashTo.replaceAll(s -> s.replace("ARG.0", finalPreserveVar + finalJ));
+                        bashTo.replaceAll(s -> s.replace("(PRESERVE_TAG.", "(REPEAT." + ref.midNum + "_PRESERVE_TAG."));
+                        bashTo.replaceAll(s -> s.replace("::PRESERVE_TAG.", "::REPEAT." + ref.midNum + "_PRESERVE_TAG."));
+                        bashTo.replaceAll(s -> s.replace("(FUNC.", "(REPEAT." + ref.midNum + "_FUNC."));
+                        bashTo.replaceAll(s -> s.replace("::FUNC.", "::REPEAT." + ref.midNum + "_FUNC."));
+                        bashToAdd.addAll(bashTo);
+                    }
+                    for (int j = -2; j < bashCache.size(); j++) bashList.remove(repeatStart);
+                    bashList.addAll(repeatStart, bashToAdd);
+
                     bashCache = new ArrayList<>();
+                    entryFound = false;
+                    ref.midNum++;
                 }
             }
 
-            if (matchIndex > 0) bashCache.add(bash);
+            if (matchIndex > 0 && entryFound) bashCache.add(bash);
 
-            if (bash.startsWith(entryString)) {
-                String[] functionHead = bash.split(" ");
-                if (functionHead.length < 3) {
-                    Utils.printRedError("Bad definition of function <anonymous>");
-                    return;
+            if (bash.startsWith(keyStart)) {
+                String bracketContent = bash.substring(7, bash.lastIndexOf(")"));
+                String[] repeatInfos = bracketContent.split(",");
+                if (repeatInfos.length == 0) {
+                    Utils.printRedError("Error: repeat() not enough infos");
+                    return codeBlock;
                 }
-                returnValue = functionHead[1];
-                int argsStart = functionHead[2].indexOf("(");
-                funcName = functionHead[2].substring(0, argsStart + 1);
-                funcArgs = functionHead[2]
-                        .substring(argsStart + 1, Utils.getEndBracket(functionHead[2], argsStart))
-                        .replace(',', ' ');
+                if (repeatInfos.length < 2) {
+                    repeatRoutes = Integer.parseInt(repeatInfos[0]);
+                } else {
+                    preserveVar = repeatInfos[0];
+                    repeatRoutes = Integer.parseInt(repeatInfos[1]);
+                }
+                entryFound = true;
+                repeatStart = i;
                 matchIndex++;
             }
-            for (var key : keysJump)
+            for (var key : keysJump) {
                 if (bash.startsWith(key)) {
                     matchIndex++;
                     break;
                 }
+            }
         }
+        return stdIOStream.from(bashList).toString();
     }
 
     /**
@@ -101,17 +146,20 @@ public class MindustryFileConverter {
             for (var func : funcMap.entrySet()) {
                 var funcKey = func.getKey();
                 while (bash.contains(funcKey)) {
-                    var funcBody = func.getValue().bash();
-                    int funcStat = func.getValue().stat();
+                    ArrayList<String> funcBody = new ArrayList<>(func.getValue().bash());
+                    boolean funcStat = !func.getValue().expr().startsWith("void");
                     int start = bash.indexOf(funcKey);
                     int end = Utils.getEndBracket(bash, start);
                     ArrayList<String> varsName = new ArrayList<>(List.of(bash.substring(start + funcKey.length(), end).split(",")));
-                    String returnName = funcStat == 1 ? "FUNC." + ref.midNum : "FUNC.void";
+                    String returnName = funcStat ? "FUNC." + ref.midNum : "FUNC.void";
                     varsName.addFirst(returnName);
                     for (int j = 0; j < varsName.size(); j++) {
                         int finalJ = j;
-                        funcBody.replaceAll(s -> s.replace("ARG#" + finalJ, varsName.get(finalJ)));
+                        funcBody.replaceAll(s -> s.replace("ARG." + finalJ, varsName.get(finalJ)));
                     }
+                    funcBody.replaceAll(s -> s.replace("(PRESERVE_TAG.", "(FUNC." + ref.midNum + "_PRESERVE_TAG."));
+                    funcBody.replaceAll(s -> s.replace("::PRESERVE_TAG.", "::FUNC." + ref.midNum + "_PRESERVE_TAG."));
+                    funcBody.replaceAll(s -> s.replace("ARG.0", "FUNC." + ref.midNum));
                     bashCache.addAll(funcBody);
                     bash = bash.substring(0, start) + returnName + bash.substring(end + 1);
                     ref.midNum++;
@@ -170,10 +218,10 @@ public class MindustryFileConverter {
                 target = s.trim().isEmpty() ? "HEAD" : s;
                 return "jump " + target + " always 0 0";
             }
-            String[] parts = s.split("\\.");
+            String[] parts = s.split("\\).");
             String[] params = new String[3];
             target = s.substring(0, s.indexOf(")"));
-            if (target.isEmpty()) target = "HEAD";
+            if (target.isEmpty()) target = "DEFAULT";
             for (String part : parts) {
                 if (!part.endsWith(")")) part = part + ")";
                 String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
@@ -262,11 +310,18 @@ public class MindustryFileConverter {
         });
 
         funcHandlers.put("ulocate", s -> {
-            if (s.isEmpty()) return "control shoot " + ref.block + " 0 0 0 0";
+            if (s.isEmpty())
+                return "ulocate building core 0 null " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
             String[] parts = s.split("\\.");
-            String locateType, ore = "null", building = "1", enemy = "0";
+            String locateType, ore = "null", building = "core", enemy = "0";
             if (!s.contains(")")) locateType = s;
             else locateType = s.substring(0, s.indexOf(")"));
+            final String[] buildings = {"core", "storage", "generator", "turret", "factory", "repair", "battery", "reactor", "drill", "shield"};
+            for (var build : buildings)
+                if (locateType.equals(build)) {
+                    locateType = "building";
+                    building = build;
+                }
 
             for (String part : parts) {
                 if (!part.endsWith(")")) part = part + ")";
@@ -299,8 +354,8 @@ public class MindustryFileConverter {
                 String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
                 String[] splitList = Utils.stringSplit(s);
                 String midVariable;
-                if (splitList.length > 1 && !entry.getKey().equals("shoot")) {
-                    stdIOStream midStream = stdIOStream.from("mid." + ref.midNum + "=" + s, ref.midNum + 1);
+                if (splitList.length > 1 && !entry.getKey().equals("shoot") && !entry.getKey().equals("ulocate")) {
+                    stdIOStream midStream = stdIOStream.from(s, ref.midNum + 1);
                     stdIOStream bashCache = convertCodeLine(midStream);
                     bashList.addAll(bashCache.bash());
                     midVariable = "mid." + ref.midNum;
@@ -382,61 +437,61 @@ public class MindustryFileConverter {
         Map<String, Function<String, String>> funcHandlers = new HashMap<>();
         Map<String, Function<String, String>> funcHandlers_low = new HashMap<>();
 
-        funcHandlers.put("not", s -> "op not mid." + ref.midNum + " " + s);
-        funcHandlers.put("abs", s -> "op abs mid." + ref.midNum + " " + s + " 0");
-        funcHandlers.put("sign", s -> "op sign mid." + ref.midNum + " " + s);
-        funcHandlers.put("floor", s -> "op floor mid." + ref.midNum + " " + s);
-        funcHandlers.put("ceil", s -> "op ceil mid." + ref.midNum + " " + s);
-        funcHandlers.put("round", s -> "op round mid." + ref.midNum + " " + s);
-        funcHandlers.put("sqrt", s -> "op sqrt mid." + ref.midNum + " " + s);
-        funcHandlers.put("rand", s -> "op rand mid." + ref.midNum + " " + s);
-        funcHandlers.put("sin", s -> "op sin mid." + ref.midNum + " " + s);
-        funcHandlers.put("cos", s -> "op cos mid." + ref.midNum + " " + s);
-        funcHandlers.put("tan", s -> "op tan mid." + ref.midNum + " " + s);
-        funcHandlers.put("asin", s -> "op asin mid." + ref.midNum + " " + s);
-        funcHandlers.put("acos", s -> "op acos mid." + ref.midNum + " " + s);
-        funcHandlers.put("atan", s -> "op atan mid." + ref.midNum + " " + s);
-        funcHandlers.put("ln", s -> "op log mid." + ref.midNum + " " + s + " 0");
-        funcHandlers.put("lg", s -> "op log10 mid." + ref.midNum + " " + s + " 0");
+        funcHandlers.put("not(", s -> "op not mid." + ref.midNum + " " + s);
+        funcHandlers.put("abs(", s -> "op abs mid." + ref.midNum + " " + s + " 0");
+        funcHandlers.put("sign(", s -> "op sign mid." + ref.midNum + " " + s);
+        funcHandlers.put("floor(", s -> "op floor mid." + ref.midNum + " " + s);
+        funcHandlers.put("ceil(", s -> "op ceil mid." + ref.midNum + " " + s);
+        funcHandlers.put("round(", s -> "op round mid." + ref.midNum + " " + s);
+        funcHandlers.put("sqrt(", s -> "op sqrt mid." + ref.midNum + " " + s);
+        funcHandlers.put("rand(", s -> "op rand mid." + ref.midNum + " " + s);
+        funcHandlers.put("sin(", s -> "op sin mid." + ref.midNum + " " + s);
+        funcHandlers.put("cos(", s -> "op cos mid." + ref.midNum + " " + s);
+        funcHandlers.put("tan(", s -> "op tan mid." + ref.midNum + " " + s);
+        funcHandlers.put("asin(", s -> "op asin mid." + ref.midNum + " " + s);
+        funcHandlers.put("acos(", s -> "op acos mid." + ref.midNum + " " + s);
+        funcHandlers.put("atan(", s -> "op atan mid." + ref.midNum + " " + s);
+        funcHandlers.put("ln(", s -> "op log mid." + ref.midNum + " " + s + " 0");
+        funcHandlers.put("lg(", s -> "op log10 mid." + ref.midNum + " " + s + " 0");
 
-        funcHandlers.put("max", s -> {
+        funcHandlers.put("max(", s -> {
             String[] paramParts = s.split(",");
             return "op max mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
-        funcHandlers.put("min", s -> {
+        funcHandlers.put("min(", s -> {
             String[] paramParts = s.split(",");
             return "op min mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
-        funcHandlers.put("len", s -> {
+        funcHandlers.put("len(", s -> {
             String[] paramParts = s.split(",");
             return "op len mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
-        funcHandlers.put("angle", s -> {
+        funcHandlers.put("angle(", s -> {
             String[] paramParts = s.split(",");
             return "op angle mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
-        funcHandlers.put("angleDiff", s -> {
+        funcHandlers.put("angleDiff(", s -> {
             String[] paramParts = s.split(",");
             return "op angleDiff mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
-        funcHandlers.put("noise", s -> {
+        funcHandlers.put("noise(", s -> {
             String[] paramParts = s.split(",");
             return "op noise mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
-        funcHandlers.put("log", s -> {
+        funcHandlers.put("log(", s -> {
             String[] paramParts = s.split(",");
             return "op logn mid." + ref.midNum + " " + paramParts[1].trim() + " " + paramParts[0].trim();
         });
 
-        funcHandlers.put("link", s -> "getlink mid." + ref.midNum + " " + s);
-        funcHandlers.put("block", s -> "lookup block mid." + ref.midNum + " " + s);
-        funcHandlers.put("unit", s -> "lookup unit mid." + ref.midNum + " " + s);
-        funcHandlers.put("item", s -> "lookup item mid." + ref.midNum + " " + s);
-        funcHandlers.put("liquid", s -> "lookup liquid mid." + ref.midNum + " " + s);
-        funcHandlers.put("team", s -> "lookup team mid." + ref.midNum + " " + s);
-        funcHandlers.put("pack", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(s.split(","), 4));
+        funcHandlers.put("link(", s -> "getlink mid." + ref.midNum + " " + s);
+        funcHandlers.put("block(", s -> "lookup block mid." + ref.midNum + " " + s);
+        funcHandlers.put("unit(", s -> "lookup unit mid." + ref.midNum + " " + s);
+        funcHandlers.put("item(", s -> "lookup item mid." + ref.midNum + " " + s);
+        funcHandlers.put("liquid(", s -> "lookup liquid mid." + ref.midNum + " " + s);
+        funcHandlers.put("team(", s -> "lookup team mid." + ref.midNum + " " + s);
+        funcHandlers.put("pack(", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(s.split(","), 4));
 
-        funcHandlers.put("uradar", s -> {
+        funcHandlers.put("uradar(", s -> {
             if (s.equals("()")) return "uradar enemy any any distance 0 0 mid." + ref.midNum;
             String[] parts = s.split("\\.");
             String block = "0", target = "enemy any any", order = "1", sort = "distance";
@@ -458,7 +513,7 @@ public class MindustryFileConverter {
             }
             return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
         });
-        funcHandlers_low.put("radar", s -> {
+        funcHandlers_low.put("radar(", s -> {
             if (s.isEmpty()) return "radar enemy any any distance 0 0 mid." + ref.midNum;
             String[] parts = s.split("\\.");
             String block = "@this", target = "enemy any any", order = "1", sort = "distance";
@@ -484,16 +539,17 @@ public class MindustryFileConverter {
 
         String expr = stream.expr();
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
-            while (expr.contains(entry.getKey() + "(")) {
+            while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey());
                 int end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
                 String[] splitList = Utils.stringSplit(s);
                 if (splitList.length > 1) {
                     stdIOStream bashCache = convertCodeLine(stdIOStream.from(s));
                     ref.midNum += bashCache.stat() - 1;
                     bashList.addAll(bashCache.bash());
                     expr = expr.replace(s, bashCache.expr());
+                    end = Utils.getEndDotCtrl(expr, start);
                     s = bashCache.expr();
                 }
                 String result = entry.getValue().apply(s);
@@ -504,10 +560,10 @@ public class MindustryFileConverter {
             }
         }
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers_low.entrySet()) {
-            while (expr.contains(entry.getKey() + "(")) {
+            while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey());
                 int end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
                 String result = entry.getValue().apply(s);
                 bashList.add(result);
                 expr = expr.substring(0, start) + "mid." + ref.midNum + expr.substring(end + 1);
@@ -552,8 +608,9 @@ public class MindustryFileConverter {
                     String bashLast;
                     if (!bashList.isEmpty()) {
                         bashLast = bashList.getLast();
-                        if (bashLast.split(" ")[offsetMap.get(bashLast.split(" ")[0])].equals(stack.getLast())) {
-                            result = bashLast.replace(stack.getLast(), stack.getFirst());
+                        int ctrlOffset = offsetMap.getOrDefault(bashLast.split(" ")[0], -1);
+                        if (ctrlOffset != -1 && bashLast.split(" ")[ctrlOffset].equals(stack.getLast())) {
+                            result = bashLast.replaceFirst(stack.getLast(), stack.getFirst());
                             bashList.removeLast();
                         }
                     }
@@ -587,7 +644,7 @@ public class MindustryFileConverter {
                 String bashFormer = bashList.get(i - 1);
                 int ctrlOffset = offsetMap.getOrDefault(bashFormer.split(" ")[0], -1);
                 if (ctrlOffset != -1 && bashFormer.split(" ")[ctrlOffset].equals(midVar)) {
-                    bashList.set(i - 1, bashFormer.replace(midVar, var0));
+                    bashList.set(i - 1, bashFormer.replaceFirst(midVar, var0));
                     bashList.remove(i);
                     i--;
                 }
@@ -608,27 +665,24 @@ public class MindustryFileConverter {
             int tag = stream.stat();
         };
 
-        final String[] keysStart = {"do{", "for(", "if("};
-        final String keyEnd = "}";
+        final String keyStart = "{", keyEnd = "}";
         while (true) {
             int matchIndex = 0, lineIndex = -1, line2Index = -1;
             for (int i = 0; i < bashList.size(); i++) {
                 String line = bashList.get(i);
-                for (String keyStart : keysStart) {
-                    if (line.startsWith(keyStart)) {
-                        if (lineIndex == -1) lineIndex = i;
-                        matchIndex++;
-                    } else if (line.startsWith(keyEnd)) {
-                        if (matchIndex == 1) line2Index = i;
-                        matchIndex--;
-                    }
+                if (line.endsWith(keyStart)) {
+                    if (lineIndex == -1) lineIndex = i;
+                    matchIndex++;
+                }
+                if (line.startsWith(keyEnd)) {
+                    if (matchIndex == 1) line2Index = i;
+                    matchIndex--;
                 }
                 if (line2Index != -1) break;
             }
             if (line2Index == -1) {
                 if (lineIndex != -1) {
                     Utils.printRedError("Error: {} not match: No such operation.");
-                    IO.println(Arrays.deepToString(bashList.toArray()));
                     return stdIOStream.empty();
                 } else break;
             }
@@ -637,14 +691,14 @@ public class MindustryFileConverter {
             ArrayList<String> bashCache;
             int line2Offset = 0;
             if (line.startsWith("do{")) {
-                bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
+                bashList.set(lineIndex, "::PRESERVE_TAG." + ref.tag);
                 line2 = line2.substring(line2.indexOf("while(") + 6, line2.lastIndexOf(")"));
 
                 bashCache = convertCodeLine(stdIOStream.from(line2)).toStringArray();
             } else {
                 String bracketContent = line.substring(line.indexOf("(") + 1, line.lastIndexOf(")"));
                 if (line.startsWith("for(")) {
-                    bashList.set(lineIndex, "::PRESERVE-TAG#" + ref.tag);
+                    bashList.set(lineIndex, "::PRESERVE_TAG." + ref.tag);
 
                     String[] forParts = bracketContent.split(";");
                     if (forParts.length != 3) {
@@ -660,29 +714,27 @@ public class MindustryFileConverter {
                     bashCache = operateStream.toStringArray();
                     bashCache.addAll(conditionStream.toStringArray());
 
-                } else {
+                } else { //must with if()
                     ArrayList<String> initStream = convertCodeLine(stdIOStream.from(bracketContent)).bash();
-//                    initStream.removeLast();
                     String[] conditionParts = initStream.getLast().split(" ", 4);
                     Map<String, String> reverseMap = Utils.operatorReverseMap();
 
                     String condition = reverseMap.get(conditionParts[1]) + " " + conditionParts[3];
                     initStream.removeLast();
-                    initStream.add("jump PRESERVE-TAG#" + ref.tag + " " + condition);
+                    initStream.add("jump PRESERVE_TAG." + ref.tag + " " + condition);
                     bashList.remove(lineIndex);
                     bashList.addAll(lineIndex, initStream);
 
                     line2Offset += initStream.size();
-                    bashList.set(line2Index + line2Offset - 1, "::PRESERVE-TAG#" + ref.tag);
+                    bashList.set(line2Index + line2Offset - 1, "::PRESERVE_TAG." + ref.tag);
                     ref.tag++;
                     continue;
                 }
             }
-//            bashCache.removeLast();
             String[] conditionParts = bashCache.getLast().split(" ", 4);
             String condition = conditionParts[1] + " " + conditionParts[3];
             bashCache.removeLast();
-            bashCache.add("jump PRESERVE-TAG#" + ref.tag + " " + condition);
+            bashCache.add("jump PRESERVE_TAG." + ref.tag + " " + condition);
 
             bashList.remove(line2Index + line2Offset);
             bashList.addAll(line2Index + line2Offset, bashCache);
@@ -717,11 +769,16 @@ public class MindustryFileConverter {
                                 index = j - tagNum;
                                 break;
                             }
-                            tagNum += 1;
+                            tagNum++;
                         }
                     }
                     if (index >= 0) {
-                        bashList.set(i, "jump " + index + " " + String.join(" ", Arrays.copyOfRange(parts, 2, parts.length)));
+                        String jumpString = "jump " + index + " " + String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
+                        if (jumpString.endsWith("null null null")) {
+                            Utils.printRedError("Error at jump cast: line " + i);
+                            return stream;
+                        }
+                        bashList.set(i, jumpString);
                     } else {
                         Utils.printRedError("MdtC Compile Error: Jump() tag not found of [" + arg + "]");
                         bashList.set(i, "jump 0 always 0 0");

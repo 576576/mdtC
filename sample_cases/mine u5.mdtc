@@ -1,0 +1,105 @@
+::混合代码
+::例：mine u5
+::初始设定: 3poly采沙
+if(u.type==0){
+	ubind(@poly)
+	if(init==0){
+    	item=@sand
+    	u.max=3
+    	mine.ratio=0.6
+    	u.bit=2
+    	map.size=max(@mapw,@maph)
+    	u.f0=mapBasedFlag(map.size,u.bit)
+    	init=1
+    	jump(bind.end).when(bind.end==0)
+    	end()
+    }
+	u.type=@unit.sensor(@type)
+	u.capa=@unit.sensor(@itemCapacity)
+	u.fill=u.capa*mine.ratio
+	ubind(null)
+	end()
+}
+
+u.fx=u.f0+u.now
+u.now=u.now%u.max
+jump2(+(u.now*12+2))
+repeat(u,5){
+	oneBind(u)
+}
+
+::bind.end
+bind.end=@counter+1
+end()
+u.now=(u.now+1)%u.max
+
+c.d=c.sensor(@dead)
+if(c.d!=0){
+	::clocate
+	c.ulocate(core)
+	jump(clocate).when(c.f==0)
+}
+
+if(@links!=0){
+	s=link(0)
+	jump2(+1)
+}
+s=c
+s.x=s.sensor(@x)
+s.y=s.sensor(@y)
+
+u.item=@unit.sensor(@firstItem)
+u.count=@unit.sensor(item)
+mineModule(mode.to)
+
+
+
+function flag mapBasedFlag(map.size,flag.bit){
+	map.bit=ceil(lg(map.size))
+	x.bit=10.^(map.bit+flag.bit)
+	flag=@thisx*x.bit+@thisy*u.bit
+}
+
+function void oneBind(u){
+	::init
+	ubind(u.type)
+	u=@unit
+	ubind(u)
+
+	u.d=@unit.sensor(@dead)
+	jump(init).when(u.d!=0)
+	u.cer=@unit.sensor(@controller)
+	jump(break).when(u.cer==@unit)
+	jump(init).when(u.cer!=@this)
+	u.f=@unit.sensor(@flag)
+	jump(init).when(u.f!=u.fx)
+
+	::break
+	uctrl(flag,u.fx)
+	jump2(bind.end)
+}
+
+function void mineModule(mode.to){
+	if(u.item==item){
+		jump(mine2ore).when(u.count<u.fill)
+		::drop2target
+		uctrl(approach,s.x,s.y,6)
+		uctrl(itemDrop,s,u.capa)
+		end()
+	}
+	if(u.item==null){
+		::mine2ore
+		m.ulocate(ore).ore(item)
+		if(m.f==0){
+			end()
+		}
+		uctrl(boost,1)
+		uctrl(approach,m.x,m.y,5)
+		uctrl(mine,m.x,m.y)
+		end()
+	}
+	uctrl(approach,c.x,c.y,6)
+	uctrl(itemDrop,c,u.capa)
+}
+
+::pass

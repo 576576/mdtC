@@ -7,13 +7,14 @@ op land case mid.3 mid.4
 control enabled t case 0 0 0
 op add e e 1
 jump 0 lessThan e @links
+set e 0
 op add @counter @counter 4
 op max mid.1 t 5
 op pow mid.2 mid.1 3
 op add mid.3 @counter mid.2
 op sub @counter mid.3 625
 set @counter 6
-jump 19 notEqual init 0
+jump 20 notEqual init 0
 op rand mid 100000
 op floor u.flag mid
 set init 1
@@ -26,7 +27,7 @@ op greaterThan mid.4 mid.2 27
 op land case mid.3 mid.4
 control enabled t case 0 0 0
 op add e e 1
-jump 20 lessThan e @links
+jump 21 lessThan e @links
 set e 0
 getlink t e
 sensor mid.1 t @heat
@@ -36,4 +37,5 @@ op greaterThan mid.4 mid.2 27
 op land case mid.3 mid.4
 control enabled t case 0 0 0
 op add e e 1
-jump 30 lessThan e @links
+jump 31 lessThan e @links
+end

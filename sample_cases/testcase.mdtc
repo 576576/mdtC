@@ -1,16 +1,4 @@
 ::Test cases
-if(init==0){
-	mid=rand(100000)
-	u.flag=floor(mid)
-	init=1
-}
-println("Hello world")
-s=plus1(m)
-
-function void println(str){
-	print(str)
-	print("\n")
-}
-function s plus1(m){
-	s=m+1
-}
+u=uu-1
+::FUNC#2_PRESERVE_TAG#1
+jump(FUNC#2_PRESERVE_TAG#1).when(u.cer==@unit)

@@ -1,8 +1,11 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Stack;
 
 public class ReversePolishNotation {
     static void main() {
+        String str = "u.cer==@unit";
+        IO.println(Arrays.toString(generateRpn(str)));
     }
 
     public static String[] generateRpn(String str) {

@@ -4,14 +4,18 @@ import java.util.*;
 import java.util.List;
 
 public class Utils {
+    public static String filePathAbs;
+
     static void main() {
-        String str = "status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)";
-        IO.println(Arrays.toString(stringSplit(str)));
+        String str = "c.ulocate()";
+        IO.println(getDotCtrlBlock(str));
+
     }
 
     static String readFile(String filePath) {
         StringBuilder content = new StringBuilder();
         File file = new File(filePath);
+        filePathAbs = file.getAbsolutePath();
         if (!file.exists()) {
             try {
                 if (file.createNewFile()) file = new File(filePath);
@@ -84,17 +88,20 @@ public class Utils {
         String inputContent = readFile(filePath);
 
         stdIOStream convertedContent = MindustryFileConverter.convertCodeBlock(inputContent);
-        String outputFilePath = filePath.replace(".mdtc", ".mdtcode");
+        String outputPath = filePath.replace(".mdtc", ".mdtcode");
+        String outputContent = convertedContent.toString();
+        if (Main.formatOnExecute) outputContent = MdtcToFormat.convertToFormat(outputContent);
 
-        writeFile(outputFilePath, convertedContent.toString());
-        System.out.println("Compile output at:\n" + outputFilePath);
+        writeFile(outputPath, outputContent);
+        System.out.println("Compile output at:\n" + outputPath);
         if (Main.openAfterCompile)
-            openWithSystemExplorer(outputFilePath);
+            openWithSystemExplorer(outputPath);
     }
 
     static Map<String, Integer> operatorOffsetMap() {
         Map<String, Integer> keywordMap = new HashMap<>();
         keywordMap.put("op", 2);
+        keywordMap.put("sensor", 1);
         keywordMap.put("getlink", 1);
         keywordMap.put("radar", 7);
         keywordMap.put("uradar", 7);
@@ -160,7 +167,7 @@ public class Utils {
     }
 
     static boolean isDotCtrlCode(String codeLine) {
-        final String[] keys = {".ctrl", ".enable", ".config", ".color", ".shoot", ".unpack", ".pflush", ".dflush", ".write"};
+        final String[] keys = {".ctrl", ".enable", ".config", ".color", ".shoot", ".ulocate", ".unpack", ".pflush", ".dflush", ".write"};
         for (String command : keys) if (codeLine.contains(command)) return true;
         return false;
     }
@@ -178,7 +185,7 @@ public class Utils {
     static int getEndDotCtrl(String expr, int start) {
         int end = getEndBracket(expr, start);
         if (end >= expr.length() - 1 || expr.charAt(end + 1) != '.') return end;
-        String[] keys = {"enable(", "config(", "color(", "shoot(", "unpack(", "pflush(", "dflush(", "write("};
+        final String[] keys = {"ctrl(", "enable(", "config(", "color(", "shoot(", "ulocate(", "unpack(", "pflush(", "dflush(", "write("};
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
             for (String key : keys) {
                 if (expr.startsWith(key, end + 2)) return end;
@@ -193,7 +200,7 @@ public class Utils {
     static String getDotCtrlBlock(String expr) {
         String block;
         int index = expr.length() - 1;
-        String[] keys = {"enable(", "config(", "color(", "shoot(", "unpack(", "pflush(", "dflush(", "write("};
+        final String[] keys = {"ctrl(", "enable(", "config(", "color(", "shoot(", "ulocate(", "unpack(", "pflush(", "dflush(", "write("};
         for (String key : keys) {
             int keyIndex = expr.indexOf(key);
             if (keyIndex < index && keyIndex > 0) index = keyIndex;
@@ -234,21 +241,43 @@ public class Utils {
     }
 
     static String[] stringSplitPro(String str) {
-        final String[] keys = {".sensor", ".read"};
+        if (str.isEmpty()) return new String[0];
+        final String[] keysFormer = {".sensor", ".read"}, keysMiddle = {",", ";"};
         var stringSplit = stringSplit(str);
         ArrayList<String> tokens = new ArrayList<>(List.of(stringSplit));
+        String tokenFirst = tokens.getFirst();
+        if (tokenFirst.startsWith("::") && !tokenFirst.equals("::")) {
+            tokens.set(0, "::");
+            tokens.add(1, tokenFirst.substring(2));
+        }
         for (int i = 1; i < tokens.size(); i++) {
-            String token_now = tokens.get(i), token_former;
+            String token_now = tokens.get(i), token_former, token_middle;
+            if (token_now.startsWith("::") && !token_now.equals("::")) {
+                tokens.set(i, "::");
+                tokens.add(i + 1, token_now.substring(2));
+            }
             if (token_now.equals("(")) {
                 token_former = tokens.get(i - 1);
-                for (var key : keys) {
-                    if (token_former.endsWith(key)) {
+                for (var key : keysFormer) {
+                    if (token_former.endsWith(key) && !token_former.equals(key)) {
                         tokens.remove(i - 1);
                         tokens.add(i - 1, key);
                         tokens.add(i - 1, token_former.substring(0, token_former.indexOf(key)));
-                        i = i + 2;
+                        i++;
                         break;
                     }
+                }
+                token_middle = tokens.get(i + 1);
+                for (var key : keysMiddle) {
+                    String[] tokenSplit = token_middle.split(key);
+                    if (tokenSplit.length < 2) continue;
+                    tokens.remove(i + 1);
+                    for (int k = 0; k < tokenSplit.length; k++) {
+                        tokens.add(i + 1 + k * 2, tokenSplit[k]);
+                        tokens.add(i + 2 + k * 2, key);
+                    }
+                    tokens.remove(i + tokenSplit.length * 2);
+                    i = i + tokenSplit.length * 2 - 1;
                 }
             }
         }
@@ -263,13 +292,21 @@ public class Utils {
         return bashList.stream().reduce("", (a, b) -> a + "\n" + b);
     }
 
-    static String replaceReserve(String s, String[] keys) {
+    /**
+     * 转换所有已声明变量和函数内标签到保留变量名和标签
+     */
+    static String replaceReserve(String s, ArrayList<String> reserveVars, ArrayList<String> reserveTags) {
         var splitList = stringSplitPro(s);
-        for (int i = 0; i < keys.length; i++) {
-            var key = keys[i];
-            for (int j = 0; j < splitList.length; j++) {
-                if (splitList[j].equals(key))
-                    splitList[j] = "ARG#" + i;
+        for (int i = 0; i < splitList.length; i++) {
+            for (int j = 0; j < reserveVars.size(); j++) {
+                var key = reserveVars.get(j);
+                if (splitList[i].equals(key))
+                    splitList[i] = "ARG." + j;
+            }
+            for (int j = 0; j < reserveTags.size(); j++) {
+                var key = reserveTags.get(j);
+                if (splitList[i].equals(key))
+                    splitList[i] = "PRESERVE_TAG." + j;
             }
         }
         return stringOf(splitList);
@@ -295,6 +332,64 @@ public class Utils {
             }
         }
         return -1; // No matching closing bracket found
+    }
+
+    /**
+     * 将函数块分离到函数,暂存于funcMap
+     * {@code funcMap}结构: key:函数名, bash:函数体, expr:返回量, stat:标签数
+     */
+    static void convertFunc(String funcBlock) {
+        final String keyStart = "function", keyEnd = "}";
+        final String[] keysJump = {"do{", "for(", "if("};
+        ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
+        ArrayList<String> bashCache = new ArrayList<>();
+        int matchIndex = 0;
+        String funcName = "", returnValue = "";
+        String funcArgs = "";
+        ArrayList<String> preserveVars, preserveTags;
+        for (String bash : bashList) {
+            if (bash.startsWith(keyEnd)) {
+                matchIndex--;
+                if (matchIndex == 0) {
+                    String ioVariables = returnValue + " " + funcArgs;
+                    preserveVars = new ArrayList<>(List.of(ioVariables.split(" ")));
+                    preserveTags = new ArrayList<>(bashCache.stream().
+                            filter(line -> line.startsWith("::")).toList());
+                    preserveTags.replaceAll(s -> s.substring(2));
+
+                    ArrayList<String> tagsList = preserveTags;
+                    ArrayList<String> varsList = preserveVars;
+                    bashCache.replaceAll(s -> replaceReserve(s, varsList, tagsList));
+
+                    stdIOStream funcStream = stdIOStream.from(bashCache, returnValue, preserveTags.size());
+                    MindustryFileConverter.funcMap.putIfAbsent(funcName, funcStream);
+                    bashCache = new ArrayList<>();
+                }
+            }
+
+            if (matchIndex > 0) bashCache.add(bash);
+
+            if (bash.startsWith(keyStart)) {
+                String[] functionHead = bash.split(" ");
+                if (functionHead.length < 3) {
+                    printRedError("Bad definition of function <anonymous>");
+                    return;
+                }
+                returnValue = functionHead[1];
+                int argsStart = functionHead[2].indexOf("(");
+                funcName = functionHead[2].substring(0, argsStart + 1);
+                funcArgs = functionHead[2]
+                        .substring(argsStart + 1, getEndBracket(functionHead[2], argsStart))
+                        .replace(',', ' ');
+                matchIndex++;
+            }
+            for (var key : keysJump) {
+                if (bash.startsWith(key)) {
+                    matchIndex++;
+                    break;
+                }
+            }
+        }
     }
 
     /**

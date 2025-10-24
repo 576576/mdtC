@@ -1,0 +1,11 @@
+getlink t e
+sensor mid.1 t @heat
+sensor mid.2 t @thorium
+op lessThan mid.3 mid.1 0.01
+op greaterThan mid.4 mid.2 27
+op land case mid.3 mid.4
+control enabled t case 0 0 0
+op add e e 1
+jump 0 lessThan e @links
+set e 0
+end

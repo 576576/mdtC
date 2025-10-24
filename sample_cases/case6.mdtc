@@ -1,1 +1,15 @@
-::扩展指令PAGE2
+::repeat使用示例
+repeat(u,3){
+	u=link(e)
+	e=e+1
+}
+str=strln3("sayounara")
+
+
+function str strln3(str){
+	repeat(3){
+		str=str+"\n"
+	}
+}
+
+::pass

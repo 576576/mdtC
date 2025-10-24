@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public record stdIOStream(ArrayList<String> bash, String expr, int stat) {
     public stdIOStream(ArrayList<String> bash, String expr) {
@@ -46,6 +48,18 @@ public record stdIOStream(ArrayList<String> bash, String expr, int stat) {
         return new stdIOStream(bash, stat);
     }
 
+    public static stdIOStream from(ArrayList<String> bash, String expr) {
+        return new stdIOStream(bash, expr);
+    }
+
+    public static stdIOStream from(ArrayList<String> bash, String expr, int stat) {
+        return new stdIOStream(bash, expr, stat);
+    }
+
+    public static stdIOStream from(String[] bash) {
+        return new stdIOStream(new ArrayList<>(List.of(bash)));
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -54,6 +68,10 @@ public record stdIOStream(ArrayList<String> bash, String expr, int stat) {
         }
         sb.append(expr);
         return sb.toString();
+    }
+
+    public String toPlainString() {
+        return bash.stream().collect(Collectors.joining("", "", expr));
     }
 
     public ArrayList<String> toStringArray() {
