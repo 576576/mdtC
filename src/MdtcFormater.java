@@ -1,8 +1,6 @@
-public class MdtcToFormat {
-    static void main(String[] args) {
-        if (args.length > 0 && args[0].endsWith(".mdtc"))
-            Main.fileDefault = args[0];
-        Utils.formatFile();
+public class MdtcFormater {
+    static void main() {
+
     }
 
     public static String convertToFormat(String codeBlock) {

@@ -1,14 +1,18 @@
 import java.util.*;
 import java.util.function.Function;
 
-public class MindustryFileConverter {
-    public static Map<String, stdIOStream> funcMap = new HashMap<>();
+public class MdtcConverter {
+    static final Map<String, stdIOStream> funcMap = new HashMap<>();
+    static int refMidNum = 1;
 
     static void main() {
         String string = "map.size.lg=lg(ARG.1)";
         IO.println(convertFront(stdIOStream.from(string)));
     }
 
+    /**
+     * 主转换函数入口
+     */
     public static stdIOStream convertCodeBlock(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
 
@@ -24,12 +28,13 @@ public class MindustryFileConverter {
             codeBlock = insertFunc(codeBlock);
         }
 
-        if (Main.generatePrimeCode) {
+        if (Main.isGeneratePrimeCode) {
             String fileAbs = Utils.filePathAbs, filePath = fileAbs;
             if (!fileAbs.endsWith("_prime.mdtc"))
                 filePath = fileAbs.replace(".mdtc", "_prime.mdtc");
-            var writeContent = MdtcToFormat.convertToFormat(codeBlock);
+            var writeContent = MdtcFormater.convertToFormat(codeBlock);
             Utils.writeFile(filePath, writeContent);
+
             IO.println("PrimeCode output at:\n" + filePath);
         }
 
@@ -228,7 +233,7 @@ public class MindustryFileConverter {
 
                 if (bracketContent.isEmpty()) continue;
                 if (part.startsWith("when(")) {
-                    String[] rpnArray = ReversePolishNotation.generateRpn(bracketContent);
+                    String[] rpnArray = Utils.generateRpn(bracketContent);
                     if (rpnArray.length < 3) continue;
                     String operator = rpnArray[2];
                     Map<String, String> keywordMap = Utils.operatorKeyMap();
@@ -269,7 +274,7 @@ public class MindustryFileConverter {
             }
         }
 
-        return new stdIOStream(bashList, "");
+        return stdIOStream.from(bashList);
     }
 
     /**
@@ -431,68 +436,64 @@ public class MindustryFileConverter {
      */
     private static stdIOStream convertFront(stdIOStream stream) {
         ArrayList<String> bashList = new ArrayList<>(stream.bash());
-        var ref = new Object() {
-            int midNum = stream.stat();
-        };
+        refMidNum = stream.stat();
+
         Map<String, Function<String, String>> funcHandlers = new HashMap<>();
         Map<String, Function<String, String>> funcHandlers_low = new HashMap<>();
 
-        funcHandlers.put("not(", s -> "op not mid." + ref.midNum + " " + s);
-        funcHandlers.put("abs(", s -> "op abs mid." + ref.midNum + " " + s + " 0");
-        funcHandlers.put("sign(", s -> "op sign mid." + ref.midNum + " " + s);
-        funcHandlers.put("floor(", s -> "op floor mid." + ref.midNum + " " + s);
-        funcHandlers.put("ceil(", s -> "op ceil mid." + ref.midNum + " " + s);
-        funcHandlers.put("round(", s -> "op round mid." + ref.midNum + " " + s);
-        funcHandlers.put("sqrt(", s -> "op sqrt mid." + ref.midNum + " " + s);
-        funcHandlers.put("rand(", s -> "op rand mid." + ref.midNum + " " + s);
-        funcHandlers.put("sin(", s -> "op sin mid." + ref.midNum + " " + s);
-        funcHandlers.put("cos(", s -> "op cos mid." + ref.midNum + " " + s);
-        funcHandlers.put("tan(", s -> "op tan mid." + ref.midNum + " " + s);
-        funcHandlers.put("asin(", s -> "op asin mid." + ref.midNum + " " + s);
-        funcHandlers.put("acos(", s -> "op acos mid." + ref.midNum + " " + s);
-        funcHandlers.put("atan(", s -> "op atan mid." + ref.midNum + " " + s);
-        funcHandlers.put("ln(", s -> "op log mid." + ref.midNum + " " + s + " 0");
-        funcHandlers.put("lg(", s -> "op log10 mid." + ref.midNum + " " + s + " 0");
+        funcHandlers.put("not(", s -> "op not mid." + refMidNum + " " + s);
+        funcHandlers.put("abs(", s -> "op abs mid." + refMidNum + " " + s + " 0");
+        funcHandlers.put("sign(", s -> "op sign mid." + refMidNum + " " + s);
+        funcHandlers.put("floor(", s -> "op floor mid." + refMidNum + " " + s);
+        funcHandlers.put("ceil(", s -> "op ceil mid." + refMidNum + " " + s);
+        funcHandlers.put("round(", s -> "op round mid." + refMidNum + " " + s);
+        funcHandlers.put("sqrt(", s -> "op sqrt mid." + refMidNum + " " + s);
+        funcHandlers.put("rand(", s -> "op rand mid." + refMidNum + " " + s);
+        funcHandlers.put("asin(", s -> "op asin mid." + refMidNum + " " + s);
+        funcHandlers.put("acos(", s -> "op acos mid." + refMidNum + " " + s);
+        funcHandlers.put("atan(", s -> "op atan mid." + refMidNum + " " + s);
+        funcHandlers.put("ln(", s -> "op log mid." + refMidNum + " " + s + " 0");
+        funcHandlers.put("lg(", s -> "op log10 mid." + refMidNum + " " + s + " 0");
 
         funcHandlers.put("max(", s -> {
             String[] paramParts = s.split(",");
-            return "op max mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            return "op max mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
         funcHandlers.put("min(", s -> {
             String[] paramParts = s.split(",");
-            return "op min mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            return "op min mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
         funcHandlers.put("len(", s -> {
             String[] paramParts = s.split(",");
-            return "op len mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            return "op len mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
         funcHandlers.put("angle(", s -> {
             String[] paramParts = s.split(",");
-            return "op angle mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            return "op angle mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
         funcHandlers.put("angleDiff(", s -> {
             String[] paramParts = s.split(",");
-            return "op angleDiff mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            return "op angleDiff mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
         funcHandlers.put("noise(", s -> {
             String[] paramParts = s.split(",");
-            return "op noise mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            return "op noise mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
         });
         funcHandlers.put("log(", s -> {
             String[] paramParts = s.split(",");
-            return "op logn mid." + ref.midNum + " " + paramParts[1].trim() + " " + paramParts[0].trim();
+            return "op logn mid." + refMidNum + " " + paramParts[1].trim() + " " + paramParts[0].trim();
         });
 
-        funcHandlers.put("link(", s -> "getlink mid." + ref.midNum + " " + s);
-        funcHandlers.put("block(", s -> "lookup block mid." + ref.midNum + " " + s);
-        funcHandlers.put("unit(", s -> "lookup unit mid." + ref.midNum + " " + s);
-        funcHandlers.put("item(", s -> "lookup item mid." + ref.midNum + " " + s);
-        funcHandlers.put("liquid(", s -> "lookup liquid mid." + ref.midNum + " " + s);
-        funcHandlers.put("team(", s -> "lookup team mid." + ref.midNum + " " + s);
-        funcHandlers.put("pack(", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(s.split(","), 4));
+        funcHandlers.put("link(", s -> "getlink mid." + refMidNum + " " + s);
+        funcHandlers.put("block(", s -> "lookup block mid." + refMidNum + " " + s);
+        funcHandlers.put("unit(", s -> "lookup unit mid." + refMidNum + " " + s);
+        funcHandlers.put("item(", s -> "lookup item mid." + refMidNum + " " + s);
+        funcHandlers.put("liquid(", s -> "lookup liquid mid." + refMidNum + " " + s);
+        funcHandlers.put("team(", s -> "lookup team mid." + refMidNum + " " + s);
+        funcHandlers.put("pack(", s -> "packcolor mid." + refMidNum + " " + Utils.padParams(s.split(","), 4));
 
         funcHandlers.put("uradar(", s -> {
-            if (s.equals("()")) return "uradar enemy any any distance 0 0 mid." + ref.midNum;
+            if (s.equals("()")) return "uradar enemy any any distance 0 0 mid." + refMidNum;
             String[] parts = s.split("\\.");
             String block = "0", target = "enemy any any", order = "1", sort = "distance";
             for (String part : parts) {
@@ -511,10 +512,14 @@ public class MindustryFileConverter {
             if (targetParts.length < 3) {
                 target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
             }
-            return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
+            return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + refMidNum;
         });
+
+        funcHandlers_low.put("sin(", s -> "op sin mid." + refMidNum + " " + s);
+        funcHandlers_low.put("cos(", s -> "op cos mid." + refMidNum + " " + s);
+        funcHandlers_low.put("tan(", s -> "op tan mid." + refMidNum + " " + s);
         funcHandlers_low.put("radar(", s -> {
-            if (s.isEmpty()) return "radar enemy any any distance 0 0 mid." + ref.midNum;
+            if (s.isEmpty()) return "radar enemy any any distance 0 0 mid." + refMidNum;
             String[] parts = s.split("\\.");
             String block = "@this", target = "enemy any any", order = "1", sort = "distance";
             if (!s.startsWith(")")) block = s.substring(0, s.indexOf(")"));
@@ -534,10 +539,17 @@ public class MindustryFileConverter {
             if (targetParts.length < 3) {
                 target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
             }
-            return "radar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
+            return "radar " + target + " " + sort + " " + block + " " + order + " mid." + refMidNum;
         });
 
         String expr = stream.expr();
+        expr = handleFunctions(funcHandlers, expr, bashList);
+        expr = handleFunctions(funcHandlers_low, expr, bashList);
+
+        return new stdIOStream(bashList, expr, refMidNum);
+    }
+
+    private static String handleFunctions(Map<String, Function<String, String>> funcHandlers, String expr, ArrayList<String> bashList) {
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey());
@@ -546,7 +558,7 @@ public class MindustryFileConverter {
                 String[] splitList = Utils.stringSplit(s);
                 if (splitList.length > 1) {
                     stdIOStream bashCache = convertCodeLine(stdIOStream.from(s));
-                    ref.midNum += bashCache.stat() - 1;
+                    refMidNum += bashCache.stat() - 1;
                     bashList.addAll(bashCache.bash());
                     expr = expr.replace(s, bashCache.expr());
                     end = Utils.getEndDotCtrl(expr, start);
@@ -555,23 +567,11 @@ public class MindustryFileConverter {
                 String result = entry.getValue().apply(s);
                 bashList.add(result);
                 String regex = expr.substring(start, end + 1);
-                expr = expr.replace(regex, "mid." + ref.midNum);
-                ref.midNum++;
+                expr = expr.replace(regex, "mid." + refMidNum);
+                refMidNum++;
             }
         }
-        for (Map.Entry<String, Function<String, String>> entry : funcHandlers_low.entrySet()) {
-            while (expr.contains(entry.getKey())) {
-                int start = expr.indexOf(entry.getKey());
-                int end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length(), end).trim();
-                String result = entry.getValue().apply(s);
-                bashList.add(result);
-                expr = expr.substring(0, start) + "mid." + ref.midNum + expr.substring(end + 1);
-                ref.midNum++;
-            }
-        }
-
-        return new stdIOStream(bashList, expr, ref.midNum);
+        return expr;
     }
 
 
@@ -583,7 +583,7 @@ public class MindustryFileConverter {
      * @return {@code stdIOStream}
      */
     private static stdIOStream convertMiddle(stdIOStream stream) {
-        String[] rpnArray = ReversePolishNotation.generateRpn(stream.expr());
+        String[] rpnArray = Utils.generateRpn(stream.expr());
         ArrayList<String> stack = new ArrayList<>();
         ArrayList<String> bashList = stream.bash();
         var ref = new Object() {

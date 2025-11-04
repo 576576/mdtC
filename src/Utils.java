@@ -58,44 +58,44 @@ public class Utils {
         }
     }
 
-    static void formatFile() {
-        IO.println("MdtC Compiler v" + Main.versionTag);
-        String filePath = "";
-        if (!Main.isDebug) filePath = IO.readln("Enter .mdtc file path below.\n> ");
-        if (filePath.isEmpty()) {
-            filePath = Main.fileDefault;
-            IO.println("Using file> " + filePath);
-        }
+    static void formatFile(String filePath,String outPath) {
         String inputContent = readFile(filePath);
 
-        String convertedContent = MdtcToFormat.convertToFormat(inputContent);
+        String convertedContent = MdtcFormater.convertToFormat(inputContent);
         if (convertedContent.isEmpty()) {
-            IO.println("Nothing is formatted.");
+            IO.println("Nothing to format.");
             return;
         }
-        writeFile(filePath, convertedContent);
-        IO.println("Format successfully.");
+
+        writeFile(outPath, convertedContent);
+        IO.println("Formated output at:\n> " + outPath);
     }
 
-    static void convertFile() {
-        IO.println("MdtC Compiler v" + Main.versionTag);
-        String filePath = "";
-        if (!Main.isDebug) filePath = IO.readln("Enter .mdtc file path below.\n> ");
-        if (filePath.isEmpty()) {
-            filePath = Main.fileDefault;
-            IO.println("Using file> " + filePath);
-        }
+    static void convertFile(String filePath,String outPath) {
+        if (Main.isToFormat) formatFile(filePath, filePath);
+
         String inputContent = readFile(filePath);
 
-        stdIOStream convertedContent = MindustryFileConverter.convertCodeBlock(inputContent);
-        String outputPath = filePath.replace(".mdtc", ".mdtcode");
-        String outputContent = convertedContent.toString();
-        if (Main.formatOnExecute) outputContent = MdtcToFormat.convertToFormat(outputContent);
+        stdIOStream convertedContent = MdtcConverter.convertCodeBlock(inputContent);
+        String outContent = convertedContent.toString();
 
-        writeFile(outputPath, outputContent);
-        System.out.println("Compile output at:\n" + outputPath);
-        if (Main.openAfterCompile)
-            openWithSystemExplorer(outputPath);
+        writeFile(outPath, outContent);
+        IO.println("Compiled output at:\n> " + outPath);
+
+        if (Main.isOpenOutput) openWithSystemExplorer(outPath);
+    }
+
+    static void convertFileReverse(String filePath,String outPath){
+        String inputContent = readFile(filePath);
+
+        stdIOStream convertedContent = MdtcConverterReverse.convertCodeBlock(inputContent);
+        String outContent = convertedContent.toString();
+
+        writeFile(outPath, outContent);
+        IO.println("Reversed output at:\n> " + outPath);
+
+        if (Main.isToFormat) formatFile(outPath, outPath);
+        if (Main.isOpenOutput) openWithSystemExplorer(outPath);
     }
 
     static Map<String, Integer> operatorOffsetMap() {
@@ -362,7 +362,7 @@ public class Utils {
                     bashCache.replaceAll(s -> replaceReserve(s, varsList, tagsList));
 
                     stdIOStream funcStream = stdIOStream.from(bashCache, returnValue, preserveTags.size());
-                    MindustryFileConverter.funcMap.putIfAbsent(funcName, funcStream);
+                    MdtcConverter.funcMap.putIfAbsent(funcName, funcStream);
                     bashCache = new ArrayList<>();
                 }
             }
@@ -390,6 +390,51 @@ public class Utils {
                 }
             }
         }
+    }
+
+
+    /**
+     * 将中置表达式转为逆波兰表达式
+     *
+     * @return 逆波兰表达式数组
+     */
+    public static String[] generateRpn(String str) {
+        return rpn(new Stack<>(), stringSplit(str));
+    }
+
+    public static String[] rpn(Stack<String> operators, String[] tokens) {
+        ArrayList<String> output = new ArrayList<>();
+        for (String token : tokens) {
+            if (Operator.isOperator(token)) {
+                if (token.equals("(")) {
+                    operators.push(token);
+                } else if (token.equals(")")) {
+                    while (!operators.empty() && !operators.peek().equals("(")) {
+                        output.add(operators.pop());
+                    }
+                    if (!operators.empty() && operators.peek().equals("(")) {
+                        operators.pop();
+                    }
+                } else {
+                    while (!operators.empty() && !operators.peek().equals("(") && Operator.cmp(token, operators.peek()) <= 0) {
+                        output.add(operators.pop());
+                    }
+                    operators.push(token);
+                }
+            } else {
+                output.add(token);
+            }
+        }
+
+        // 遍历结束，将运算符栈全部压入output
+        while (!operators.empty()) {
+            if (!operators.peek().equals("(")) {
+                output.add(operators.pop());
+            } else {
+                operators.pop(); // Remove any remaining left parentheses
+            }
+        }
+        return output.toArray(new String[0]);
     }
 
     /**
