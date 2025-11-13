@@ -51,8 +51,7 @@ public class MdtcConverterReverse {
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             if (expr.startsWith(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey());
-                int end = expr.lastIndexOf(')');
-                String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+                String s = expr.substring(start + entry.getKey().length() + 1).trim();
                 bashList.add(entry.getValue().apply(s));
             }
         }
