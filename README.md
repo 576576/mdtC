@@ -1,9 +1,18 @@
 # MdtC
-Version: `1.0`
+Version: `1.0.1`
 
 本转换器用于将类Java代码转为mindustry处理器代码.  
 输入: 由类java语言(aka.`mdtc`)编写,`.mdtc`后缀文件.  
 输出: 用于Mindustry处理器的语句输出到`.mdtcode`.
+
+### 命令行参数
+
+- `-v, --version`: 显示版本信息
+- `-f, --format`: 格式化代码
+- `-fo, --format-only`: 仅格式化代码
+- `-i, --file <文件路径>`: 指定文件路径
+- `-o, --output <输出路径>`: 指定输出路径
+- `-oo, --open-out`: 编译后打开输出
 
 ### *查看这些示例快速开始*
 - [钍堆防爆](sample_cases/failsafe_钍堆.mdtc)
@@ -13,7 +22,7 @@ Version: `1.0`
 ### TodoList
 - 完善代码检查/自动补全
 - 支持模块导入
-- 附件为游戏模组
+- 编写为游戏模组
 
 > 初始版本README见[这里](./readme_original.txt)
 ---

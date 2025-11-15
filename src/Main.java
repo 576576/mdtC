@@ -1,7 +1,7 @@
 import org.apache.commons.cli.*;
 
 public class Main {
-    private static final String versionTag = "1.0";
+    private static final String VERSION_TAG = "1.0.1";
 
     public static boolean isGeneratePrimeCode = false;
     public static boolean isOpenOutput;
@@ -19,12 +19,12 @@ public class Main {
         options.addOption("fo", "format-only", false, "仅格式化代码");
         options.addOption("i", "file", true, "指定文件路径");
         options.addOption("o", "output", true, "指定输出路径");
-        options.addOption("oo", "open-out", true, "指定输出路径");
+        options.addOption("oo", "open-out", false, "编译后打开输出");
 
         CommandLineParser parser = new DefaultParser();
         try {
             CommandLine cmd = parser.parse(options, args);
-            if (cmd.hasOption("v")) IO.println("MdtC Compiler v" + Main.versionTag);
+            if (cmd.hasOption("v")) IO.println("MdtC Compiler v" + Main.VERSION_TAG);
             isToFormat = cmd.hasOption("f");
             isFormatOnly = cmd.hasOption("fo");
             if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
