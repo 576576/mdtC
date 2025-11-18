@@ -38,4 +38,3 @@ op land case mid.3 mid.4
 control enabled t case 0 0 0
 op add e e 1
 jump 31 lessThan e @links
-end

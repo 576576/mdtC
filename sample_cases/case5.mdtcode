@@ -1,5 +1,6 @@
 print "Hello world"
 print "\n"
+printflush message1
 set e 0
 getlink t e
 sensor mid.1 t @heat
@@ -9,4 +10,17 @@ op greaterThan mid.4 mid.2 27
 op land FUNC.2 mid.3 mid.4
 control enabled t FUNC.2 0 0 0
 op add e e 1
-jump 3 lessThan e @links
+jump 4 lessThan e @links
+jump 16 notEqual u null
+ubind @mono
+set u @unit
+ubind u
+sensor mid.1 u @dead
+jump 14 notEqual mid.1 0
+sensor u.cer u @controller
+jump 24 equal u.cer @unit
+jump 14 notEqual u.cer @this
+sensor mid.1 u @flag
+jump 14 notEqual mid.1 114514
+ucontrol flag 114514 0 0 0 0
+set @counter bind.end

@@ -1,7 +1,7 @@
 ::例:钍堆防爆
 t=link(e)
-case=(t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
+case= t.sensor(@heat)<0.01 && t.sensor(@thorium)>27
 t.enable(case)
 e=e+1
-jump(HEAD).when(e<@links)
+jump().when(e<@links)
 e=0

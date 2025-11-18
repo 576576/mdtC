@@ -1,15 +1,15 @@
 getlink s i
-lookup block mid.1 2
+lookup unit mid.1 3
 lookup item mid.2 4
-lookup team mid.3 6
-packcolor mid.4 r g b a
-lookup unit mid.5 3
-lookup liquid mid.6 5
-op mul mid.7 mid.1 mid.5
+lookup liquid mid.3 5
+lookup block mid.4 2
+packcolor mid.5 r g b a
+lookup team mid.6 6
+op mul mid.7 mid.4 mid.1
 op mul mid.8 mid.7 mid.2
-op mul mid.9 mid.8 mid.6
-op mul mid.10 mid.9 mid.3
-op mul g mid.10 mid.4
+op mul mid.9 mid.8 mid.3
+op mul mid.10 mid.9 mid.6
+op mul g mid.10 mid.5
 uradar enemy any any distance 0 1 mid.1
 radar player ground any maxHealth t5 0 mid.2
 op equal m mid.1 mid.2

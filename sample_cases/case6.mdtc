@@ -6,7 +6,8 @@ repeat(u,3){
 str=strln3("sayounara")
 
 
-function str strln3(str){
+function str strln3(str_in){
+	str=str_in
 	repeat(3){
 		str=str+"\n"
 	}

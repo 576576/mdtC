@@ -23,7 +23,7 @@ public class MdtcFormater {
                     break;
                 }
             if (matchIndex < 0) {
-                Utils.printRedError("Match brackets fail.\nat line" + i + ". " + line);
+                Utils.printError("Match brackets fail.\nat line" + i + ". " + line);
                 return "";
             }
 

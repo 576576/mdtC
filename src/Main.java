@@ -1,17 +1,14 @@
 import org.apache.commons.cli.*;
 
 public class Main {
-    private static final String VERSION_TAG = "1.0.1";
+    private static final String VERSION_TAG = "1.1";
 
     public static boolean isGeneratePrimeCode = false;
-    public static boolean isOpenOutput;
-    public static boolean isToFormat;
-    private static boolean isFormatOnly;
+    public static boolean isOpenOutput, isToFormat, isFormatOnly;
+    public static String filePath = "", outPath = "";
 
     static void main(String[] args) {
-        String filePath = "", outPath = "";
-
-        if (args.length != 0) filePath = args[0];
+        if (args.length != 0 && args[0].endsWith(".mdtc")) filePath = args[0];
 
         Options options = new Options();
         options.addOption("v", "version", false, "显示版本信息");
@@ -37,7 +34,7 @@ public class Main {
         if (filePath.isEmpty())
             filePath = IO.readln("Enter input file path below.\n> ");
         if (filePath.isEmpty()) {
-            IO.println("\u001B[31mNo input file is detected.\u001B[0m");
+            Utils.printError("No input file is detected.");
             return;
         }
 
@@ -52,6 +49,6 @@ public class Main {
         } else if (filePath.endsWith(".mdtcode")) {
             if (outPath.isEmpty()) outPath = filePath.substring(0, filePath.length() - 3);
             Utils.convertFileReverse(filePath, outPath);
-        } else IO.println("> " + filePath + "\n\u001B[31mNot supported formats(.mdtc, .mdtcode)\u001B[0m");
+        } else Utils.printError("> " + filePath + "\nNot supported formats(.mdtc, .mdtcode)");
     }
 }

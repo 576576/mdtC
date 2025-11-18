@@ -1,22 +1,24 @@
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 public class MdtcConverter {
-    static final Map<String, stdIOStream> funcMap = new HashMap<>();
-    static int refMidNum = 1;
+    static Map<String, stdIOStream> funcMap = new HashMap<>();
 
     static void main() {
-        String string = "map.size.lg=lg(ARG.1)";
-        IO.println(convertFront(stdIOStream.from(string)));
+        String str = "u=1\njump().when(u.sensor(@flag)!=u.fx)";
+        IO.println(convertCodeBlock(str));
     }
 
     /**
      * 主转换函数入口
+     *
+     * @return {@code stdIOStream}
      */
     public static stdIOStream convertCodeBlock(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
 
-        codeBlock = "::HEAD\n" + codeBlock;
+        codeBlock = insertImport(codeBlock);
         codeBlock = unfoldRepeat(codeBlock);
 
         var funcStartIndex = codeBlock.indexOf("\nfunction");
@@ -24,18 +26,19 @@ public class MdtcConverter {
             String funcBlock = codeBlock.substring(funcStartIndex);
             codeBlock = codeBlock.substring(0, funcStartIndex);
 
-            Utils.convertFunc(funcBlock);
+            funcMap = generateFuncMap(funcBlock);
             codeBlock = insertFunc(codeBlock);
         }
 
         if (Main.isGeneratePrimeCode) {
-            String fileAbs = Utils.filePathAbs, filePath = fileAbs;
-            if (!fileAbs.endsWith("_prime.mdtc"))
-                filePath = fileAbs.replace(".mdtc", "_prime.mdtc");
-            var writeContent = MdtcFormater.convertToFormat(codeBlock);
-            Utils.writeFile(filePath, writeContent);
+            String filePath = Main.filePath;
+            if (!filePath.endsWith("_prime.mdtc") && filePath.endsWith(".mdtc")) {
+                filePath = filePath.replace(".mdtc", "_prime.mdtc");
+                String writeContent = MdtcFormater.convertToFormat(codeBlock);
+                Utils.writeFile(filePath, writeContent);
 
-            IO.println("PrimeCode output at:\n" + filePath);
+                IO.println("PrimeCode output at:\n" + filePath);
+            } else IO.println("Skip writing prime code.");
         }
 
         int refMax = 1;
@@ -46,16 +49,37 @@ public class MdtcConverter {
                 bashList.addAll(convertedLine.toStringArray());
             }
         }
+        bashList.add(0, "::HEAD");
         bashList.add("::END");
-        bashList.add("end");
+        if (!bashList.contains("::DEFAULT"))
+            bashList.add(1, "::DEFAULT");
 
-        stdIOStream result_clear = codeClear(stdIOStream.from(bashList, refMax));
-        stdIOStream result_pre_jump = convertPreJump(result_clear);
-        return convertJump(result_pre_jump);
+        stdIOStream result_clear = convertSet(stdIOStream.from(bashList, refMax));
+        stdIOStream result_pre_jump = convertJump(result_clear);
+        return convertLink(result_pre_jump);
+    }
+
+    private static String insertImport(String codeBlock) {
+        ArrayList<String> bashList = new ArrayList<>(List.of(codeBlock.split("\n")));
+        List<String> importLines = bashList.stream()
+                .filter(line -> line.startsWith("import ")).toList();
+        bashList.removeIf(line -> line.startsWith("import "));
+        StringBuilder codeBlockBuilder = new StringBuilder(codeBlock);
+        for (var line : importLines) {
+            String importPath = line.substring(6).trim();
+            codeBlockBuilder.append("\n").append(Utils.readFile(importPath));
+        }
+        codeBlock = codeBlockBuilder.toString();
+
+        //todo:支持只导入部分函数(关键字 from/as)
+//        Map<String, ArrayList<String>> insertFuncMap = new HashMap<>();
+
+        return codeBlock;
     }
 
     /**
-     * 展开repeat块
+     * <p>展开{@code repeat}块</p>
+     * <p>等价的1D数组实现, 嵌套即可实现n维数组</p>
      */
     private static String unfoldRepeat(String codeBlock) {
         var ref = new Object() {
@@ -113,7 +137,7 @@ public class MdtcConverter {
                 String bracketContent = bash.substring(7, bash.lastIndexOf(")"));
                 String[] repeatInfos = bracketContent.split(",");
                 if (repeatInfos.length == 0) {
-                    Utils.printRedError("Error: repeat() not enough infos");
+                    Utils.printError("Error: repeat() not enough infos");
                     return codeBlock;
                 }
                 if (repeatInfos.length < 2) {
@@ -137,7 +161,7 @@ public class MdtcConverter {
     }
 
     /**
-     * 将函数转内嵌到代码块
+     * 内嵌函数到代码块
      *
      * @return {@code stdIOStream}
      */
@@ -177,6 +201,11 @@ public class MdtcConverter {
         return Utils.listToCodeBlock(bashCache);
     }
 
+    /**
+     * <p>转换一行代码</p>
+     *
+     * @return {@code stdIOStream}
+     */
     private static stdIOStream convertCodeLine(stdIOStream stream) {
         String codeLine = stream.expr();
         if (Utils.isSpecialControl(codeLine)) return stream;
@@ -189,87 +218,98 @@ public class MdtcConverter {
             stream = convertMiddle(stream);
         }
 
-        return codeClear(stream);
+        return convertSet(stream);
     }
 
     /**
-     * {@code CtrlCode} 为无副作用的以()形式内接调用函数.
-     * {@code CtrlCode} 有效函数名为:
+     * <p>转换{@code CtrlCode}类型函数</p>
+     * <p>{@code CtrlCode} 为无副作用的以{@code ()}形式内接调用函数.</p>
+     * <p>有效函数名为:{@code
      * print printchar format wait ubind stop end
-     * jump jump2 printf
+     * jump jump2 printf}</p>
      *
      * @return {@code stdIOStream}
      */
     private static stdIOStream convertCtrl(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
+        var ref = new Object() {
+            int midNum = stream.stat();
+        };
 
-        Map<String, Function<String, String>> funcHandlers = new HashMap<>();
-        funcHandlers.put("print", s -> "print " + s);
-        funcHandlers.put("printchar", s -> "printchar " + s);
-        funcHandlers.put("format", s -> "format " + s);
-        funcHandlers.put("wait", s -> "wait " + s);
-        funcHandlers.put("stop", _ -> "stop");
-        funcHandlers.put("end", _ -> "end");
+        Map<String, Function<String, String>> funcHandlers = new HashMap<>() {{
+            put("print(", s -> "print " + s);
+            put("printchar(", s -> "printchar " + s);
+            put("format(", s -> "format " + s);
+            put("wait(", s -> "wait " + s);
+            put("stop(", _ -> "stop");
+            put("end(", _ -> "end");
 
-        funcHandlers.put("ubind", s -> "ubind " + s);
-        funcHandlers.put("uctrl", s -> "ucontrol " + Utils.padParams(s.replace(',', ' '), 6));
+            put("ubind(", s -> "ubind " + s);
+            put("uctrl(", s -> "ucontrol " + Utils.padParams(s.replace(',', ' '), 6));
 
-        funcHandlers.put("draw", s -> "draw " + Utils.padParams(s.replace(',', ' '), 7));
+            put("draw(", s -> "draw " + Utils.padParams(s.replace(',', ' '), 7));
 
-        funcHandlers.put("jump", s -> {
-            String target;
-            if (!s.contains(")")) {
-                target = s.trim().isEmpty() ? "HEAD" : s;
-                return "jump " + target + " always 0 0";
-            }
-            String[] parts = s.split("\\).");
-            String[] params = new String[3];
-            target = s.substring(0, s.indexOf(")"));
-            if (target.isEmpty()) target = "DEFAULT";
-            for (String part : parts) {
-                if (!part.endsWith(")")) part = part + ")";
-                String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+            put("jump(", s -> {
+                final String defaultTarget = "DEFAULT", defaultCondition = "always 0 0";
+                String target, condition = defaultCondition;
 
-                if (bracketContent.isEmpty()) continue;
-                if (part.startsWith("when(")) {
-                    String[] rpnArray = Utils.generateRpn(bracketContent);
-                    if (rpnArray.length < 3) continue;
-                    String operator = rpnArray[2];
-                    Map<String, String> keywordMap = Utils.operatorKeyMap();
-                    if (keywordMap.containsKey(operator)) params[0] = keywordMap.get(operator);
-                    else continue;
-                    params[1] = rpnArray[0];
-                    params[2] = rpnArray[1];
-                }
-            }
-            return "jump " + target + " " + Utils.padParams(params, 3);
-        });
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                target = paramsMap.getOrDefault("main", defaultTarget);
 
-        funcHandlers.put("jump2", s -> {
-            String[] strSplit = Utils.stringSplit(s);
-            if (strSplit.length > 1) s = "@counter=@counter" + s;
-            else s = "@counter=" + s;
-            stdIOStream jump2stream = convertCodeLine(stdIOStream.from(s));
-            bashList.addAll(jump2stream.toStringArray());
-            return "";
-        });
-        funcHandlers.put("printf", s -> {
-            String[] parts = s.split(",");
-            if (parts.length < 2) return "print " + s;
-            bashList.add("print " + parts[0]);
-            for (int i = 1; i < parts.length; i++) {
-                bashList.add("format " + parts[i]);
-            }
-            return "";
-        });
-        funcHandlers.put("tag", s -> "::" + s);
+                s = paramsMap.getOrDefault("when", "");
+                String[] splitList = Utils.stringSplitPro(s);
+                if (splitList.length > 1) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                    if (!bashCache.bash().isEmpty()) {
+                        ref.midNum = bashCache.stat();
+                        String bashLast = bashCache.bash().getLast();
+                        condition = Utils.getCondition(bashLast);
+                        if (!condition.equals(defaultCondition)) bashCache.bash().removeLast();
+                        else if (!bashCache.expr().isEmpty())
+                            condition = String.join(" ", "notEqual", bashCache.expr(), "0");
+                        bashList.addAll(bashCache.bash());
+                    }
+                } else condition = String.join(" ", "notEqual", s, "0");
+                return String.join(" ", "jump", target, condition);
+            });
 
+            put("jump2(", s -> {
+                String[] strSplit = Utils.stringSplit(s);
+                if (strSplit.length > 1) s = "@counter=@counter" + s;
+                else s = "@counter=" + s;
+
+                stdIOStream jump2stream = convertCodeLine(stdIOStream.from(s));
+                bashList.addAll(jump2stream.bash());
+                return jump2stream.expr();
+            });
+            put("printf(", s -> {
+                String[] parts = s.split(",");
+                if (parts.length < 2) return "print " + s;
+                bashList.add("print " + parts[0]);
+                IntStream.range(1, parts.length).mapToObj(i ->
+                        "format " + parts[i]).forEach(bashList::add);
+                return "";
+            });
+            put("tag(", s -> "::" + s);
+        }};
+
+        final List<String> jumpCtrlKeys = List.of(new String[]{"jump(", "jump2("});
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
-            if (expr.contains(entry.getKey() + "(")) {
-                int start = expr.indexOf(entry.getKey() + "(");
-                int end = expr.lastIndexOf(')');
-                String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+            if (expr.contains(entry.getKey())) {
+                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
+                String[] splitList = Utils.stringSplitPro(s);
+                if (splitList.length > 1 && !jumpCtrlKeys.contains(entry.getKey())) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                    if (!bashCache.bash().isEmpty()) {
+                        ref.midNum = bashCache.stat();
+                        bashList.addAll(bashCache.bash());
+                        String midVariable = "mid." + ref.midNum;
+                        expr = expr.replace(s, midVariable);
+                        s = midVariable;
+                    }
+                }
                 bashList.add(entry.getValue().apply(s));
             }
         }
@@ -278,96 +318,99 @@ public class MdtcConverter {
     }
 
     /**
-     * {@code DotCtrlCode} 为无副作用的以.形式后接调用函数.
-     * {@code DotCtrlCode} 有效函数名为:
-     * enable shoot config color unpack dflush pflush ulocate
+     * <p>转换{@code DotCtrlCode}类型函数</p>
+     * <p>{@code DotCtrlCode} 为无副作用的以{@code .}形式后接调用函数.</p>
+     * <p>有效函数名为:{@code
+     * enable shoot config color unpack dflush pflush ulocate}</p>
      *
      * @return {@code stdIOStream}
      */
     private static stdIOStream convertDotCtrl(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
+        String expr = stream.expr();
+        String finalExpr = expr;
         var ref = new Object() {
-            int midNum = 1;
-            String block = "";
+            final String block = Utils.getDotCtrlBlock(finalExpr);
+            int midNum = stream.stat();
         };
 
-        Map<String, Function<String, String>> funcHandlers = new HashMap<>();
-        funcHandlers.put("ctrl", s -> "control " + Utils.padParams(s.replace(',', ' '), 5));
-        funcHandlers.put("enable", s -> "control enabled " + ref.block + " " + Utils.padParams(s, 4));
-        funcHandlers.put("config", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
-        funcHandlers.put("color", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
-        funcHandlers.put("shoot", s -> {
-            if (s.isEmpty()) return "control shoot " + ref.block + " 0 0 0 0";
-            String[] parts = s.split("\\.");
-            String target = "@this", ctrlType = "shootp", shooting = "1";
-            if (!s.startsWith(")")) shooting = s.substring(0, Math.max(1, s.indexOf(")")));
-            for (String part : parts) {
-                if (!part.endsWith(")")) part = part + ")";
-                String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+        Map<String, Function<String, String>> funcHandlers = new HashMap<>() {{
+            put("ctrl(", s -> "control " + Utils.padParams(s.replace(',', ' '), 5));
+            put("enable(", s -> "control enabled " + ref.block + " " + Utils.padParams(s, 4));
+            put("config(", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
+            put("color(", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
+            put("shoot(", s -> {
+                if (s.isEmpty()) return "control shoot " + ref.block + " 0 0 0 0";
+                String[] parts = s.split("\\.");
+                String target = "@this", ctrlType = "shootp", shooting = "1";
+                if (!s.startsWith(")")) shooting = s.substring(0, Math.max(1, s.indexOf(")")));
+                for (String part : parts) {
+                    if (!part.endsWith(")")) part = part + ")";
+                    String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
 
-                if (bracketContent.isEmpty()) continue;
-                if (part.startsWith("target(")) {
-                    if (bracketContent.split(",").length > 1) ctrlType = "shoot";
-                    target = bracketContent.replaceAll(",\\s*", " ");
+                    if (bracketContent.isEmpty()) continue;
+                    if (part.startsWith("target(")) {
+                        if (bracketContent.split(",").length > 1) ctrlType = "shoot";
+                        target = bracketContent.replaceAll(",\\s*", " ");
+                    }
                 }
-            }
-            return "control " + ctrlType + " " + ref.block + " " + Utils.padParams(target + " " + shooting, 4);
-        });
+                return "control " + ctrlType + " " + ref.block + " " + Utils.padParams(target + " " + shooting, 4);
+            });
 
-        funcHandlers.put("ulocate", s -> {
-            if (s.isEmpty())
-                return "ulocate building core 0 null " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
-            String[] parts = s.split("\\.");
-            String locateType, ore = "null", building = "core", enemy = "0";
-            if (!s.contains(")")) locateType = s;
-            else locateType = s.substring(0, s.indexOf(")"));
-            final String[] buildings = {"core", "storage", "generator", "turret", "factory", "repair", "battery", "reactor", "drill", "shield"};
-            for (var build : buildings)
-                if (locateType.equals(build)) {
-                    locateType = "building";
-                    building = build;
+            put("ulocate(", s -> {
+                if (s.isEmpty())
+                    return "ulocate building core 0 null " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
+                String[] parts = s.split("\\.");
+                String locateType, ore = "null", building = "core", enemy = "0";
+                if (!s.contains(")")) locateType = s;
+                else locateType = s.substring(0, s.indexOf(")"));
+                final String[] buildings = {"core", "storage", "generator", "turret", "factory", "repair", "battery", "reactor", "drill", "shield"};
+                for (var build : buildings)
+                    if (locateType.equals(build)) {
+                        locateType = "building";
+                        building = build;
+                    }
+
+                for (String part : parts) {
+                    if (!part.endsWith(")")) part = part + ")";
+                    String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+
+                    if (bracketContent.isEmpty()) continue;
+                    if (part.startsWith("ore(")) ore = bracketContent;
+                    else if (part.startsWith("building(")) building = bracketContent;
+                    else if (part.startsWith("enemy")) enemy = bracketContent;
                 }
+                return "ulocate " + locateType + " " + building + " " + enemy + " " + ore + " " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
+            });
 
-            for (String part : parts) {
-                if (!part.endsWith(")")) part = part + ")";
-                String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+            put("unpack(", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
+            put("pflush(", _ -> "printflush " + ref.block);
+            put("dflush(", _ -> "drawflush " + ref.block);
+            put("write(", s -> {
+                String[] parts = s.split(",");
+                String content = "null", bit = "0";
+                if (parts.length > 0) content = parts[0];
+                if (parts.length > 1) bit = parts[1];
+                return "write " + content + " " + ref.block + " " + bit;
+            });
+        }};
 
-                if (bracketContent.isEmpty()) continue;
-                if (part.startsWith("ore(")) ore = bracketContent;
-                else if (part.startsWith("building(")) building = bracketContent;
-                else if (part.startsWith("enemy")) enemy = bracketContent;
-            }
-            return "ulocate " + locateType + " " + building + " " + enemy + " " + ore + " " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
-        });
-
-        funcHandlers.put("unpack", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
-        funcHandlers.put("pflush", _ -> "printflush " + ref.block);
-        funcHandlers.put("dflush", _ -> "drawflush " + ref.block);
-        funcHandlers.put("write", s -> {
-            String[] parts = s.split(",");
-            String content = "null", bit = "0";
-            if (parts.length > 0) content = parts[0];
-            if (parts.length > 1) bit = parts[1];
-            return "write " + content + " " + ref.block + " " + bit;
-        });
-
-        String expr = stream.expr();
-        ref.block = Utils.getDotCtrlBlock(expr);
+        final List<String> chainDCtrlKeys = List.of(new String[]{"shoot(", "ulocate("});
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
-            while (expr.contains(entry.getKey() + "(")) {
+            while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
                 String[] splitList = Utils.stringSplit(s);
-                String midVariable;
-                if (splitList.length > 1 && !entry.getKey().equals("shoot") && !entry.getKey().equals("ulocate")) {
-                    stdIOStream midStream = stdIOStream.from(s, ref.midNum + 1);
-                    stdIOStream bashCache = convertCodeLine(midStream);
-                    bashList.addAll(bashCache.bash());
-                    midVariable = "mid." + ref.midNum;
-                    expr = expr.replace(s, midVariable);
-                    s = midVariable;
-                    end = Utils.getEndDotCtrl(expr, start);
-                    ref.midNum = bashCache.stat();
+                if (splitList.length > 1 && !chainDCtrlKeys.contains(entry.getKey())) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                    if (!bashCache.bash().isEmpty()) {
+                        ref.midNum = bashCache.stat();
+                        bashList.addAll(bashCache.bash());
+                        String midVariable = "mid." + ref.midNum;
+                        expr = expr.replace(s, midVariable);
+                        s = midVariable;
+                        end = Utils.getEndDotCtrl(expr, start);
+                    }
                 }
                 String result = entry.getValue().apply(s.trim());
                 bashList.add(result);
@@ -379,9 +422,9 @@ public class MdtcConverter {
     }
 
     /**
-     * {@code DotCode} 为有副作用的以.形式后接调用函数.
-     * {@code DotCode} 有效函数名为:
-     * sensor read
+     * <p>转换{@code DotCode}类型函数</p>
+     * <p>{@code DotCode} 为有副作用的以{@code .}形式后接调用函数.</p>
+     * <p>有效函数名为: {@code sensor read}</p>
      *
      * @return {@code stdIOStream}
      */
@@ -392,29 +435,31 @@ public class MdtcConverter {
             int midNum = stream.stat();
             String block = "";
         };
-        Map<String, Function<String, String>> funcHandlers = new HashMap<>();
-        funcHandlers.put("sensor", s -> "sensor mid." + ref.midNum + " " + ref.block + " " + s);
-        funcHandlers.put("read", s -> "read mid." + ref.midNum + " " + ref.block + " " + s);
+        Map<String, Function<String, String>> funcHandlers = new HashMap<>() {{
+            put("sensor(", s -> "sensor mid." + ref.midNum + " " + ref.block + " " + s);
+            put("read(", s -> "read mid." + ref.midNum + " " + ref.block + " " + s);
+        }};
 
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
-            while (expr.contains(entry.getKey() + "(")) {
+            while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey());
                 String[] strSplit = Utils.stringSplit(expr.substring(0, start - 1));
                 ref.block = strSplit[strSplit.length - 1];
 
-                int end = Utils.getEndBracket(expr, start + entry.getKey().length());
+                int end = Utils.getEndBracket(expr, start);
 
-                String s = expr.substring(start + entry.getKey().length() + 1, end).trim();
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
                 String[] splitList = Utils.stringSplit(s);
                 String midVariable;
                 if (splitList.length > 1) {
-                    stdIOStream midStream = stdIOStream.from(s, ref.midNum);
-                    stdIOStream bashCache = convertCodeLine(midStream);
-                    ref.midNum = bashCache.stat();
-                    bashList.addAll(bashCache.bash());
-                    midVariable = "mid." + (ref.midNum - 1);
-                    expr = expr.replace(s, midVariable);
-                    s = midVariable;
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                    if (!bashCache.bash().isEmpty()) {
+                        ref.midNum = bashCache.stat();
+                        bashList.addAll(bashCache.bash());
+                        midVariable = "mid." + ref.midNum;
+                        expr = expr.replace(s, midVariable);
+                        s = midVariable;
+                    }
                 }
                 String result = entry.getValue().apply(s.trim());
                 bashList.add(result);
@@ -426,159 +471,160 @@ public class MdtcConverter {
     }
 
     /**
-     * {@code FrontCode} 为有副作用的以()形式内接调用函数.
-     * {@code FrontCode} 有效函数名为:
+     * <p>转换{@code FrontCode}类型函数</p>
+     * <p>{@code FrontCode} 为有副作用的以{@code ()}形式内接调用函数.</p>
+     * <p>有效函数名为:{@code
      * not abs sign floor ceil round sqrt rand sin cos tan asin acos atan
-     * ln lg max min len angle angleDiff noise log pack
-     * link block unit item liquid team sensor uradar radar
+     * ln lg lb max min len angle angleDiff noise log pack
+     * link block unit item liquid team sensor uradar radar}</p>
      *
      * @return {@code stdIOStream}
      */
     private static stdIOStream convertFront(stdIOStream stream) {
         ArrayList<String> bashList = new ArrayList<>(stream.bash());
-        refMidNum = stream.stat();
+        var ref = new Object() {
+            int midNum = stream.stat();
+        };
 
-        Map<String, Function<String, String>> funcHandlers = new HashMap<>();
-        Map<String, Function<String, String>> funcHandlers_low = new HashMap<>();
-
-        funcHandlers.put("not(", s -> "op not mid." + refMidNum + " " + s);
-        funcHandlers.put("abs(", s -> "op abs mid." + refMidNum + " " + s + " 0");
-        funcHandlers.put("sign(", s -> "op sign mid." + refMidNum + " " + s);
-        funcHandlers.put("floor(", s -> "op floor mid." + refMidNum + " " + s);
-        funcHandlers.put("ceil(", s -> "op ceil mid." + refMidNum + " " + s);
-        funcHandlers.put("round(", s -> "op round mid." + refMidNum + " " + s);
-        funcHandlers.put("sqrt(", s -> "op sqrt mid." + refMidNum + " " + s);
-        funcHandlers.put("rand(", s -> "op rand mid." + refMidNum + " " + s);
-        funcHandlers.put("asin(", s -> "op asin mid." + refMidNum + " " + s);
-        funcHandlers.put("acos(", s -> "op acos mid." + refMidNum + " " + s);
-        funcHandlers.put("atan(", s -> "op atan mid." + refMidNum + " " + s);
-        funcHandlers.put("ln(", s -> "op log mid." + refMidNum + " " + s + " 0");
-        funcHandlers.put("lg(", s -> "op log10 mid." + refMidNum + " " + s + " 0");
-
-        funcHandlers.put("max(", s -> {
-            String[] paramParts = s.split(",");
-            return "op max mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
-        });
-        funcHandlers.put("min(", s -> {
-            String[] paramParts = s.split(",");
-            return "op min mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
-        });
-        funcHandlers.put("len(", s -> {
-            String[] paramParts = s.split(",");
-            return "op len mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
-        });
-        funcHandlers.put("angle(", s -> {
-            String[] paramParts = s.split(",");
-            return "op angle mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
-        });
-        funcHandlers.put("angleDiff(", s -> {
-            String[] paramParts = s.split(",");
-            return "op angleDiff mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
-        });
-        funcHandlers.put("noise(", s -> {
-            String[] paramParts = s.split(",");
-            return "op noise mid." + refMidNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
-        });
-        funcHandlers.put("log(", s -> {
-            String[] paramParts = s.split(",");
-            return "op logn mid." + refMidNum + " " + paramParts[1].trim() + " " + paramParts[0].trim();
-        });
-
-        funcHandlers.put("link(", s -> "getlink mid." + refMidNum + " " + s);
-        funcHandlers.put("block(", s -> "lookup block mid." + refMidNum + " " + s);
-        funcHandlers.put("unit(", s -> "lookup unit mid." + refMidNum + " " + s);
-        funcHandlers.put("item(", s -> "lookup item mid." + refMidNum + " " + s);
-        funcHandlers.put("liquid(", s -> "lookup liquid mid." + refMidNum + " " + s);
-        funcHandlers.put("team(", s -> "lookup team mid." + refMidNum + " " + s);
-        funcHandlers.put("pack(", s -> "packcolor mid." + refMidNum + " " + Utils.padParams(s.split(","), 4));
-
-        funcHandlers.put("uradar(", s -> {
-            if (s.equals("()")) return "uradar enemy any any distance 0 0 mid." + refMidNum;
-            String[] parts = s.split("\\.");
-            String block = "0", target = "enemy any any", order = "1", sort = "distance";
-            for (String part : parts) {
-                if (part.endsWith(")")) part = part.substring(0, part.lastIndexOf(")"));
-                int bracketIndex = part.indexOf("(") + 1;
-                if (bracketIndex >= part.length()) continue;
-                if (part.startsWith("target(")) {
-                    target = part.replaceAll(",\\s*", " ");
-                } else if (part.startsWith("order(")) {
-                    order = part;
-                } else if (part.startsWith("sort(")) {
-                    sort = part;
+        Map<String, Function<String, String>> funcHandlers_high = new HashMap<>() {{
+            put("not(", s -> "op not mid." + ref.midNum + " " + s + " 0");
+            put("abs(", s -> "op abs mid." + ref.midNum + " " + s + " 0");
+            put("sign(", s -> "op sign mid." + ref.midNum + " " + s + " 0");
+            put("floor(", s -> "op floor mid." + ref.midNum + " " + s + " 0");
+            put("ceil(", s -> "op ceil mid." + ref.midNum + " " + s + " 0");
+            put("round(", s -> "op round mid." + ref.midNum + " " + s + " 0");
+            put("sqrt(", s -> "op sqrt mid." + ref.midNum + " " + s + " 0");
+            put("rand(", s -> "op rand mid." + ref.midNum + " " + s + " 0");
+            put("asin(", s -> "op asin mid." + ref.midNum + " " + s + " 0");
+            put("acos(", s -> "op acos mid." + ref.midNum + " " + s + " 0");
+            put("atan(", s -> "op atan mid." + ref.midNum + " " + s + " 0");
+            put("ln(", s -> "op log mid." + ref.midNum + " " + s + " 0");
+            put("lg(", s -> "op log10 mid." + ref.midNum + " " + s + " 0");
+            put("lb(", s -> "op logn mid." + ref.midNum + " " + s + " 2");
+            put("max(", s -> {
+                String[] paramParts = s.split(",");
+                return "op max mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            });
+            put("min(", s -> {
+                String[] paramParts = s.split(",");
+                return "op min mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            });
+            put("len(", s -> {
+                String[] paramParts = s.split(",");
+                return "op len mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            });
+            put("angle(", s -> {
+                String[] paramParts = s.split(",");
+                return "op angle mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            });
+            put("angleDiff(", s -> {
+                String[] paramParts = s.split(",");
+                return "op angleDiff mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            });
+            put("noise(", s -> {
+                String[] paramParts = s.split(",");
+                return "op noise mid." + ref.midNum + " " + paramParts[0].trim() + " " + paramParts[1].trim();
+            });
+            put("log(", s -> {
+                String[] paramParts = s.split(",");
+                return "op logn mid." + ref.midNum + " " + paramParts[1].trim() + " " + paramParts[0].trim();
+            });
+            put("link(", s -> "getlink mid." + ref.midNum + " " + s);
+            put("block(", s -> "lookup block mid." + ref.midNum + " " + s);
+            put("unit(", s -> "lookup unit mid." + ref.midNum + " " + s);
+            put("item(", s -> "lookup item mid." + ref.midNum + " " + s);
+            put("liquid(", s -> "lookup liquid mid." + ref.midNum + " " + s);
+            put("team(", s -> "lookup team mid." + ref.midNum + " " + s);
+            put("pack(", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(s.split(","), 4));
+            put("uradar(", s -> {
+                if (s.equals("()")) return "uradar enemy any any distance 0 0 mid." + ref.midNum;
+                String[] parts = s.split("\\.");
+                String block = "0", target = "enemy any any", order = "1", sort = "distance";
+                for (String part : parts) {
+                    if (part.endsWith(")")) part = part.substring(0, part.lastIndexOf(")"));
+                    int bracketIndex = part.indexOf("(") + 1;
+                    if (bracketIndex >= part.length()) continue;
+                    if (part.startsWith("target(")) {
+                        target = part.replaceAll(",\\s*", " ");
+                    } else if (part.startsWith("order(")) {
+                        order = part;
+                    } else if (part.startsWith("sort(")) {
+                        sort = part;
+                    }
                 }
-            }
-            String[] targetParts = target.split(" ");
-            if (targetParts.length < 3) {
-                target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
-            }
-            return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + refMidNum;
-        });
-
-        funcHandlers_low.put("sin(", s -> "op sin mid." + refMidNum + " " + s);
-        funcHandlers_low.put("cos(", s -> "op cos mid." + refMidNum + " " + s);
-        funcHandlers_low.put("tan(", s -> "op tan mid." + refMidNum + " " + s);
-        funcHandlers_low.put("radar(", s -> {
-            if (s.isEmpty()) return "radar enemy any any distance 0 0 mid." + refMidNum;
-            String[] parts = s.split("\\.");
-            String block = "@this", target = "enemy any any", order = "1", sort = "distance";
-            if (!s.startsWith(")")) block = s.substring(0, s.indexOf(")"));
-            for (String part : parts) {
-                if (!part.endsWith(")")) part = part + ")";
-                String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
-                if (bracketContent.isEmpty()) continue;
-                if (part.startsWith("target(")) {
-                    target = bracketContent.replaceAll(",\\s*", " ");
-                } else if (part.startsWith("order(")) {
-                    order = bracketContent;
-                } else if (part.startsWith("sort(")) {
-                    sort = bracketContent;
+                String[] targetParts = target.split(" ");
+                if (targetParts.length < 3) {
+                    target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
                 }
-            }
-            String[] targetParts = target.split(" ");
-            if (targetParts.length < 3) {
-                target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
-            }
-            return "radar " + target + " " + sort + " " + block + " " + order + " mid." + refMidNum;
-        });
+                return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
+            });
+        }};
+
+        Map<String, Function<String, String>> funcHandlers_low = new HashMap<>() {{
+            put("sin(", s -> "op sin mid." + ref.midNum + " " + s);
+            put("cos(", s -> "op cos mid." + ref.midNum + " " + s);
+            put("tan(", s -> "op tan mid." + ref.midNum + " " + s);
+            put("radar(", s -> {
+                if (s.isEmpty()) return "radar enemy any any distance 0 0 mid." + ref.midNum;
+                String[] parts = s.split("\\.");
+                String block = "@this", target = "enemy any any", order = "1", sort = "distance";
+                if (!s.startsWith(")")) block = s.substring(0, s.indexOf(")"));
+                for (String part : parts) {
+                    if (!part.endsWith(")")) part = part + ")";
+                    String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+                    if (bracketContent.isEmpty()) continue;
+                    if (part.startsWith("target(")) {
+                        target = bracketContent.replaceAll(",\\s*", " ");
+                    } else if (part.startsWith("order(")) {
+                        order = bracketContent;
+                    } else if (part.startsWith("sort(")) {
+                        sort = bracketContent;
+                    }
+                }
+                String[] targetParts = target.split(" ");
+                if (targetParts.length < 3) {
+                    target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
+                }
+                return "radar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
+            });
+        }};
 
         String expr = stream.expr();
-        expr = handleFunctions(funcHandlers, expr, bashList);
-        expr = handleFunctions(funcHandlers_low, expr, bashList);
 
-        return new stdIOStream(bashList, expr, refMidNum);
-    }
+        for (Map<String, Function<String, String>> handlers : List.of(funcHandlers_high, funcHandlers_low)) {
+            for (Map.Entry<String, Function<String, String>> entry : handlers.entrySet()) {
+                while (expr.contains(entry.getKey())) {
+                    int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                    String s = expr.substring(start + entry.getKey().length(), end).trim();
+                    String[] splitList = Utils.stringSplit(s);
+                    if (splitList.length > 1) {
+                        stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                        if (!bashCache.bash().isEmpty()) {
+                            ref.midNum = bashCache.stat();
+                            bashList.addAll(bashCache.bash());
+                            expr = expr.replace(s, bashCache.expr());
+                            end = Utils.getEndDotCtrl(expr, start);
+                            s = bashCache.expr();
+                        }
+                    }
+                    String result = entry.getValue().apply(s);
+                    bashList.add(result);
 
-    private static String handleFunctions(Map<String, Function<String, String>> funcHandlers, String expr, ArrayList<String> bashList) {
-        for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
-            while (expr.contains(entry.getKey())) {
-                int start = expr.indexOf(entry.getKey());
-                int end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length(), end).trim();
-                String[] splitList = Utils.stringSplit(s);
-                if (splitList.length > 1) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s));
-                    refMidNum += bashCache.stat() - 1;
-                    bashList.addAll(bashCache.bash());
-                    expr = expr.replace(s, bashCache.expr());
-                    end = Utils.getEndDotCtrl(expr, start);
-                    s = bashCache.expr();
+                    String regex = expr.substring(start, end + 1);
+                    expr = expr.replace(regex, "mid." + ref.midNum);
+                    ref.midNum++;
                 }
-                String result = entry.getValue().apply(s);
-                bashList.add(result);
-                String regex = expr.substring(start, end + 1);
-                expr = expr.replace(regex, "mid." + refMidNum);
-                refMidNum++;
             }
         }
-        return expr;
+
+        return new stdIOStream(bashList, expr, ref.midNum);
     }
 
 
     /**
-     * {@code MidCode} 为有副作用的以可逆波兰化形式中接调用函数.
-     * {@code MidCode} 有效函数名为:
-     * + - * / // % %% .^ == != && < <= > >= === << >> >>> | & ^
+     * <p>转换{@code MidCode}类型函数</p>
+     * <p>{@code MidCode}为有副作用的以可逆波兰化形式中接调用函数,</p>
+     * <p>有效函数名详见{@link Utils#operatorKeyMap operators}</p>
      *
      * @return {@code stdIOStream}
      */
@@ -589,8 +635,8 @@ public class MdtcConverter {
         var ref = new Object() {
             int midNum = stream.stat();
         };
-        final Map<String, String> operatorMap = Utils.operatorKeyMap();
-        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap();
+        final Map<String, String> operatorMap = Utils.operatorKeyMap;
+        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap;
 
         for (String token : rpnArray) {
             if (operatorMap.containsKey(token)) {
@@ -630,10 +676,12 @@ public class MdtcConverter {
     }
 
     /**
-     * 简化带有set的代码行
+     * <p>转换{@code set}类型函数的非孤立行</p>
+     *
+     * @return {@code stdIOStream}
      */
-    private static stdIOStream codeClear(stdIOStream stream) {
-        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap();
+    private static stdIOStream convertSet(stdIOStream stream) {
+        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap;
         ArrayList<String> bashList = stream.bash();
         if (bashList.isEmpty()) return stdIOStream.empty();
         for (int i = 1; i < bashList.size(); i++) {
@@ -654,11 +702,11 @@ public class MdtcConverter {
     }
 
     /**
-     * 转换if/for/while 为原生的jump
+     * 转换{@code if/for/while}为原生{@code jump}
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertPreJump(stdIOStream stream) {
+    private static stdIOStream convertJump(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
         bashList.removeIf(String::isEmpty);
         var ref = new Object() {
@@ -682,7 +730,7 @@ public class MdtcConverter {
             }
             if (line2Index == -1) {
                 if (lineIndex != -1) {
-                    Utils.printRedError("Error: {} not match: No such operation.");
+                    Utils.printError("Error: {} not match: No such operation.");
                     return stdIOStream.empty();
                 } else break;
             }
@@ -702,7 +750,7 @@ public class MdtcConverter {
 
                     String[] forParts = bracketContent.split(";");
                     if (forParts.length != 3) {
-                        Utils.printRedError("Error: for() content not match");
+                        Utils.printError("Error: for() content not match");
                         return stdIOStream.empty();
                     }
                     ArrayList<String> initStream = convertCodeLine(stdIOStream.from(forParts[0])).toStringArray();
@@ -714,10 +762,10 @@ public class MdtcConverter {
                     bashCache = operateStream.toStringArray();
                     bashCache.addAll(conditionStream.toStringArray());
 
-                } else { //must with if()
+                } else { //must be if()
                     ArrayList<String> initStream = convertCodeLine(stdIOStream.from(bracketContent)).bash();
                     String[] conditionParts = initStream.getLast().split(" ", 4);
-                    Map<String, String> reverseMap = Utils.operatorReverseMap();
+                    Map<String, String> reverseMap = Utils.operatorReverseMap;
 
                     String condition = reverseMap.get(conditionParts[1]) + " " + conditionParts[3];
                     initStream.removeLast();
@@ -744,11 +792,11 @@ public class MdtcConverter {
     }
 
     /**
-     * 将带标签的jump相对跳转转化为绝对跳转
+     * 将{@code jump}中的动态链接转为静态
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertJump(stdIOStream stream) {
+    private static stdIOStream convertLink(stdIOStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
@@ -775,12 +823,21 @@ public class MdtcConverter {
                     if (index >= 0) {
                         String jumpString = "jump " + index + " " + String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
                         if (jumpString.endsWith("null null null")) {
-                            Utils.printRedError("Error at jump cast: line " + i);
+                            ArrayList<String> bashCache = new ArrayList<>(bashList);
+                            bashCache.removeIf(s -> s.startsWith("::"));
+                            IO.println(stdIOStream.from(bashCache).toString());
+                            Utils.printError("Error at jump cast: line " + i);
+                            Utils.printError(i + " " + line);
                             return stream;
                         }
                         bashList.set(i, jumpString);
                     } else {
-                        Utils.printRedError("MdtC Compile Error: Jump() tag not found of [" + arg + "]");
+                        ArrayList<String> bashCache = new ArrayList<>(bashList);
+                        bashCache.removeIf(s -> s.startsWith("::"));
+                        IO.println(stdIOStream.from(bashCache).toString());
+                        Utils.printError("MdtC Compile Error: Jump() tag not found of [" + arg + "]");
+                        Utils.printError(i + " " + line);
+
                         bashList.set(i, "jump 0 always 0 0");
                     }
                 }
@@ -791,4 +848,63 @@ public class MdtcConverter {
         return new stdIOStream(bashList, expr);
     }
 
+    /**
+     * 将函数块分离到函数,暂存于funcMap
+     * {@code funcMap}结构: key:函数名, bash:函数体, expr:返回量, stat:标签数
+     */
+    static Map<String, stdIOStream> generateFuncMap(String funcBlock) {
+        final String keyStart = "function", keyEnd = "}";
+        final String[] keysJump = {"do{", "for(", "if("};
+        Map<String, stdIOStream> funcMap = new HashMap<>();
+        ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
+        ArrayList<String> bashCache = new ArrayList<>();
+        int matchIndex = 0;
+        String funcName = "", returnValue = "";
+        String funcArgs = "";
+        ArrayList<String> preserveVars, preserveTags;
+        for (String bash : bashList) {
+            if (bash.startsWith(keyEnd)) {
+                matchIndex--;
+                if (matchIndex == 0) {
+                    String ioVariables = returnValue + " " + funcArgs;
+                    preserveVars = new ArrayList<>(List.of(ioVariables.split(" ")));
+                    preserveTags = new ArrayList<>(bashCache.stream().
+                            filter(line -> line.startsWith("::")).toList());
+                    preserveTags.replaceAll(s -> s.substring(2));
+
+                    ArrayList<String> tagsList = preserveTags;
+                    ArrayList<String> varsList = preserveVars;
+                    bashCache.replaceAll(s -> Utils.replaceReserve(s, varsList, tagsList));
+
+                    stdIOStream funcStream = stdIOStream.from(bashCache, returnValue, preserveTags.size());
+                    funcMap.putIfAbsent(funcName, funcStream);
+                    bashCache = new ArrayList<>();
+                }
+            }
+
+            if (matchIndex > 0) bashCache.add(bash);
+
+            if (bash.startsWith(keyStart)) {
+                String[] functionHead = bash.split(" ");
+                if (functionHead.length < 3) {
+                    Utils.printError("Bad definition of function <anonymous>");
+                    return funcMap;
+                }
+                returnValue = functionHead[1];
+                int argsStart = functionHead[2].indexOf("(");
+                funcName = functionHead[2].substring(0, argsStart + 1);
+                funcArgs = functionHead[2]
+                        .substring(argsStart + 1, Utils.getEndBracket(functionHead[2], argsStart))
+                        .replace(',', ' ');
+                matchIndex++;
+            }
+            for (var key : keysJump) {
+                if (bash.startsWith(key)) {
+                    matchIndex++;
+                    break;
+                }
+            }
+        }
+        return funcMap;
+    }
 }

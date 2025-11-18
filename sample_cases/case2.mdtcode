@@ -6,18 +6,17 @@ stop
 end
 ubind @mono
 ucontrol shoot 114 514 0 0 0
-control color b1 0 0 0 0
-control enabled b1 false 0 0 0
 control config b1 null 0 0 0
+control enabled b1 false 0 0 0
+control color b1 0 0 0 0
 control shoot b2 x y 1 0
 control shootp b2 u1 st 0 0
 control config b2 @copper 0 0 0
 ulocate building turret 1 null c.x c.y c.f c
-drawflush msg
 printflush msg
+drawflush msg
 unpackcolor r g b a color1
 write cell1 result x1
 print "666{0}yf{1}"
 format 6
 format cr1
-end

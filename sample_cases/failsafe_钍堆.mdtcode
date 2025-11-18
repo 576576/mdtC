@@ -8,4 +8,3 @@ control enabled t case 0 0 0
 op add e e 1
 jump 0 lessThan e @links
 set e 0
-end

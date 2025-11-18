@@ -1,42 +1,79 @@
 import java.awt.*;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 
 public class Utils {
-    public static String filePathAbs;
+    final static String[] dotCtrlCodes = {".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
+            ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write("};
+    final static String[] ctrlCodes = {"print(", "printchar(", "format(", "wait(", "stop(",
+            "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf("};
+    final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
+        put("op", 2);
+        put("sensor", 1);
+        put("getlink", 1);
+        put("radar", 7);
+        put("uradar", 7);
+        put("lookup", 2);
+        put("packcolor", 1);
+        put("read", 1);
+    }};
+    final static Map<String, String> operatorReverseMap = new HashMap<>() {{
+        put("equal", "notEqual");
+        put("notEqual", "equal");
+        put("lessThan", "greaterThanEq");
+        put("lessThanEq", "greaterThan");
+        put("greaterThan", "lessThanEq");
+        put("greaterThanEq", "lessThan");
+        put("strictEqual", "notEqual");
+    }};
+    final static Map<String, String> operatorKeyMap = new HashMap<>() {{
+        put("+", "add");
+        put("-", "sub");
+        put("*", "mul");
+        put("/", "div");
+        put("//", "idiv");
+        put("%", "mod");
+        put("%%", "emod");
+        put(".^", "pow");
+        put("==", "equal");
+        put("!=", "notEqual");
+        put("&&", "land");
+        put("<", "lessThan");
+        put("<=", "lessThanEq");
+        put(">", "greaterThan");
+        put(">=", "greaterThanEq");
+        put("===", "strictEqual");
+        put("<<", "shl");
+        put(">>", "shr");
+        put(">>>", "ushr");
+        put("|", "or");
+        put("&", "and");
+        put("^", "xor");
+        put("=", "set");
+    }};
 
     static void main() {
-        String str = "c.ulocate()";
-        IO.println(getDotCtrlBlock(str));
 
     }
 
     static String readFile(String filePath) {
-        StringBuilder content = new StringBuilder();
-        File file = new File(filePath);
-        filePathAbs = file.getAbsolutePath();
-        if (!file.exists()) {
-            try {
-                if (file.createNewFile()) file = new File(filePath);
-            } catch (IOException _) {
-            }
-        }
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
+        try {
+            return Files.readString(Paths.get(filePath));
         } catch (IOException e) {
-            System.err.println("读取文件时出错: " + e.getMessage());
+            printError("Unable to read file." + e.getMessage());
+            return "";
         }
-        return content.toString();
     }
 
     static void writeFile(String filePath, String content) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            writer.write(content);
-        } catch (IOException _) {
+        try {
+            Files.writeString(Paths.get(filePath), content);
+        } catch (IOException e) {
+            printError("Unable to write file." + e.getMessage());
         }
     }
 
@@ -45,20 +82,14 @@ public class Utils {
         if (Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();
             try {
-                if (desktop.isSupported(Desktop.Action.OPEN)) {
-                    desktop.open(directory);
-                } else {
-                    System.out.println("打开目录的操作不受支持");
-                }
+                desktop.open(directory);
             } catch (IOException e) {
-                System.err.println("无法打开目录: " + e.getMessage());
+                printError("Unable to open directory." + e.getMessage());
             }
-        } else {
-            System.out.println("Desktop不受支持");
         }
     }
 
-    static void formatFile(String filePath,String outPath) {
+    static void formatFile(String filePath, String outPath) {
         String inputContent = readFile(filePath);
 
         String convertedContent = MdtcFormater.convertToFormat(inputContent);
@@ -68,10 +99,10 @@ public class Utils {
         }
 
         writeFile(outPath, convertedContent);
-        IO.println("Formated output at:\n> " + outPath);
+        IO.println("Formatted output at:\n> " + outPath);
     }
 
-    static void convertFile(String filePath,String outPath) {
+    static void convertFile(String filePath, String outPath) {
         if (Main.isToFormat) formatFile(filePath, filePath);
 
         String inputContent = readFile(filePath);
@@ -85,7 +116,7 @@ public class Utils {
         if (Main.isOpenOutput) openWithSystemExplorer(outPath);
     }
 
-    static void convertFileReverse(String filePath,String outPath){
+    static void convertFileReverse(String filePath, String outPath) {
         String inputContent = readFile(filePath);
 
         stdIOStream convertedContent = MdtcConverterReverse.convertCodeBlock(inputContent);
@@ -96,60 +127,6 @@ public class Utils {
 
         if (Main.isToFormat) formatFile(outPath, outPath);
         if (Main.isOpenOutput) openWithSystemExplorer(outPath);
-    }
-
-    static Map<String, Integer> operatorOffsetMap() {
-        Map<String, Integer> keywordMap = new HashMap<>();
-        keywordMap.put("op", 2);
-        keywordMap.put("sensor", 1);
-        keywordMap.put("getlink", 1);
-        keywordMap.put("radar", 7);
-        keywordMap.put("uradar", 7);
-        keywordMap.put("lookup", 2);
-        keywordMap.put("packcolor", 1);
-        keywordMap.put("read", 1);
-        return keywordMap;
-    }
-
-    static Map<String, String> operatorReverseMap() {
-        Map<String, String> keywordMap = new HashMap<>();
-        keywordMap.put("equal", "notEqual");
-        keywordMap.put("notEqual", "equal");
-        keywordMap.put("lessThan", "greaterThanEq");
-        keywordMap.put("lessThanEq", "greaterThan");
-        keywordMap.put("greaterThan", "lessThanEq");
-        keywordMap.put("greaterThanEq", "lessThan");
-        keywordMap.put("strictEqual", "notEqual");
-        return keywordMap;
-    }
-
-
-    static Map<String, String> operatorKeyMap() {
-        Map<String, String> keywordMap = new HashMap<>();
-        keywordMap.put("+", "add");
-        keywordMap.put("-", "sub");
-        keywordMap.put("*", "mul");
-        keywordMap.put("/", "div");
-        keywordMap.put("//", "idiv");
-        keywordMap.put("%", "mod");
-        keywordMap.put("%%", "emod");
-        keywordMap.put(".^", "pow");
-        keywordMap.put("==", "equal");
-        keywordMap.put("!=", "notEqual");
-        keywordMap.put("&&", "land");
-        keywordMap.put("<", "lessThan");
-        keywordMap.put("<=", "lessThanEq");
-        keywordMap.put(">", "greaterThan");
-        keywordMap.put(">=", "greaterThanEq");
-        keywordMap.put("===", "strictEqual");
-        keywordMap.put("<<", "shl");
-        keywordMap.put(">>", "shr");
-        keywordMap.put(">>>", "ushr");
-        keywordMap.put("|", "or");
-        keywordMap.put("&", "and");
-        keywordMap.put("^", "xor");
-        keywordMap.put("=", "set");
-        return keywordMap;
     }
 
     static String padParams(String[] params, int paramNum) {
@@ -167,30 +144,26 @@ public class Utils {
     }
 
     static boolean isDotCtrlCode(String codeLine) {
-        final String[] keys = {".ctrl", ".enable", ".config", ".color", ".shoot", ".ulocate", ".unpack", ".pflush", ".dflush", ".write"};
-        for (String command : keys) if (codeLine.contains(command)) return true;
+        for (String command : dotCtrlCodes) if (codeLine.contains(command)) return true;
         return false;
     }
 
     static boolean isCtrlCode(String codeLine) {
-        String[] keys = {"print(", "printchar(", "format(", "wait(", "stop(", "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf("};
-        for (String command : keys) if (codeLine.startsWith(command)) return true;
+        for (String command : ctrlCodes) if (codeLine.startsWith(command)) return true;
         return false;
     }
 
-    static void printRedError(String message) {
+    static void printError(String message) {
         System.err.println("\u001B[31m" + message + "\u001B[0m");
     }
 
     static int getEndDotCtrl(String expr, int start) {
         int end = getEndBracket(expr, start);
-        if (end >= expr.length() - 1 || expr.charAt(end + 1) != '.') return end;
-        final String[] keys = {"ctrl(", "enable(", "config(", "color(", "shoot(", "ulocate(", "unpack(", "pflush(", "dflush(", "write("};
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
-            for (String key : keys) {
-                if (expr.startsWith(key, end + 2)) return end;
+            for (String key : dotCtrlCodes) {
+                if (expr.startsWith(key, end + 1)) return end;
             }
-            int endNext = getEndBracket(expr, end + 2);
+            int endNext = getEndBracket(expr, end + 1);
             if (endNext != -1) end = endNext;
             else return end;
         }
@@ -198,15 +171,12 @@ public class Utils {
     }
 
     static String getDotCtrlBlock(String expr) {
-        String block;
         int index = expr.length() - 1;
-        final String[] keys = {"ctrl(", "enable(", "config(", "color(", "shoot(", "ulocate(", "unpack(", "pflush(", "dflush(", "write("};
-        for (String key : keys) {
+        for (String key : dotCtrlCodes) {
             int keyIndex = expr.indexOf(key);
-            if (keyIndex < index && keyIndex > 0) index = keyIndex;
+            if (keyIndex != -1 && keyIndex < index) index = keyIndex;
         }
-        block = expr.substring(0, index - 1);
-        return block;
+        return expr.substring(0, index);
     }
 
     /**
@@ -334,64 +304,38 @@ public class Utils {
         return -1; // No matching closing bracket found
     }
 
-    /**
-     * 将函数块分离到函数,暂存于funcMap
-     * {@code funcMap}结构: key:函数名, bash:函数体, expr:返回量, stat:标签数
-     */
-    static void convertFunc(String funcBlock) {
-        final String keyStart = "function", keyEnd = "}";
-        final String[] keysJump = {"do{", "for(", "if("};
-        ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
-        ArrayList<String> bashCache = new ArrayList<>();
-        int matchIndex = 0;
-        String funcName = "", returnValue = "";
-        String funcArgs = "";
-        ArrayList<String> preserveVars, preserveTags;
-        for (String bash : bashList) {
-            if (bash.startsWith(keyEnd)) {
-                matchIndex--;
-                if (matchIndex == 0) {
-                    String ioVariables = returnValue + " " + funcArgs;
-                    preserveVars = new ArrayList<>(List.of(ioVariables.split(" ")));
-                    preserveTags = new ArrayList<>(bashCache.stream().
-                            filter(line -> line.startsWith("::")).toList());
-                    preserveTags.replaceAll(s -> s.substring(2));
-
-                    ArrayList<String> tagsList = preserveTags;
-                    ArrayList<String> varsList = preserveVars;
-                    bashCache.replaceAll(s -> replaceReserve(s, varsList, tagsList));
-
-                    stdIOStream funcStream = stdIOStream.from(bashCache, returnValue, preserveTags.size());
-                    MdtcConverter.funcMap.putIfAbsent(funcName, funcStream);
-                    bashCache = new ArrayList<>();
-                }
+    static String getCondition(String codeLine) {
+        final String defaultCondition = "always 0 0";
+        String[] params = codeLine.split(" ");
+        if (params.length == 0) return defaultCondition;
+        String key = params[0];
+        if (key.equals("op")) {
+            if (!operatorReverseMap.containsKey((params[1]))) {
+                String target = params[operatorOffsetMap.get(key)];
+                return String.join(" ", "notEqual", target, "0");
             }
-
-            if (matchIndex > 0) bashCache.add(bash);
-
-            if (bash.startsWith(keyStart)) {
-                String[] functionHead = bash.split(" ");
-                if (functionHead.length < 3) {
-                    printRedError("Bad definition of function <anonymous>");
-                    return;
-                }
-                returnValue = functionHead[1];
-                int argsStart = functionHead[2].indexOf("(");
-                funcName = functionHead[2].substring(0, argsStart + 1);
-                funcArgs = functionHead[2]
-                        .substring(argsStart + 1, getEndBracket(functionHead[2], argsStart))
-                        .replace(',', ' ');
-                matchIndex++;
-            }
-            for (var key : keysJump) {
-                if (bash.startsWith(key)) {
-                    matchIndex++;
-                    break;
-                }
-            }
+            return String.join(" ", params[1], params[3], params[4]);
+        } else if (operatorOffsetMap.containsKey(key)) {
+            String target = params[operatorOffsetMap.get(key)];
+            return String.join(" ", "notEqual", target, "0");
         }
+        return defaultCondition;
     }
 
+    static Map<String, String> getChainParams(String s) {
+        String expr = ".main(" + s + ")";
+        Map<String, String> paramsMap = new HashMap<>();
+        for (int i = 0; i < expr.length(); i++) {
+            if (expr.charAt(i) == '.') {
+                int start = expr.indexOf("(", i), end = getEndBracket(expr, start);
+                String key = expr.substring(i + 1, start);
+                String value = expr.substring(start + 1, end).trim();
+                if (!value.isEmpty()) paramsMap.put(key, value);
+                i = end;
+            }
+        }
+        return paramsMap;
+    }
 
     /**
      * 将中置表达式转为逆波兰表达式
@@ -447,12 +391,12 @@ public class Utils {
         MULTIPLY("*", 5), INTEGER_DIVIDE("//", 5),
         DIVIDE("/", 5), PERCENTAGE_MODULO("%%", 5),
         MODULO("%", 5), EXPONENT(".^", 7),
-        STRICT_EQUALS("===", 2), EQUALS("==", 2),
-        NOT_EQUALS("!=", 2), LOGICAL_AND("&&", 2),
-        GREATER_THAN_OR_EQUAL_TO(">=", 2), LESS_THAN_OR_EQUAL_TO("<=", 2),
+        STRICT_EQUALS("===", 3), EQUALS("==", 3),
+        NOT_EQUALS("!=", 3), LOGICAL_AND("&&", 2),
+        GREATER_THAN_OR_EQUAL_TO(">=", 3), LESS_THAN_OR_EQUAL_TO("<=", 3),
         UNSIGNED_RIGHT_SHIFT(">>>", 5), RIGHT_SHIFT(">>", 5),
         LEFT_SHIFT("<<", 5), BITWISE_XOR("^", 2),
-        GREATER_THAN(">", 2), LESS_THAN("<", 2),
+        GREATER_THAN(">", 3), LESS_THAN("<", 3),
         AND("&", 2), OR("|", 2),
         LEFT_BRACKET("(", 10), RIGHT_BRACKET(")", 10),
         ASSIGN("=", 1);
@@ -472,15 +416,10 @@ public class Utils {
          * @return c1的优先级是否比c2的高，高则返回正数，等于返回0，小于返回负数
          */
         public static int cmp(String c1, String c2) {
-            int p1 = 0;
-            int p2 = 0;
+            int p1 = 0, p2 = 0;
             for (Operator o : Operator.values()) {
-                if (o.value.equals(c1)) {
-                    p1 = o.priority;
-                }
-                if (o.value.equals(c2)) {
-                    p2 = o.priority;
-                }
+                if (o.value.equals(c1)) p1 = o.priority;
+                if (o.value.equals(c2)) p2 = o.priority;
             }
             return p1 - p2;
         }
@@ -492,9 +431,7 @@ public class Utils {
          */
         public static boolean isOperator(String c) {
             for (Operator o : Operator.values()) {
-                if (o.value.equals(c)) {
-                    return true;
-                }
+                if (o.value.equals(c)) return true;
             }
             return false;
         }

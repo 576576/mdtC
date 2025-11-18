@@ -1,13 +1,16 @@
 ::函数
 ::示例使用
 println("Hello world")
+message1.pflush()
 for(e=0;e<@links;e=e+1){
 	t=link(e)
 	t.enable(isReactorSafe(t))
 }
+onebind(u,@mono,114514)
 
 
 ::示例定义(无副作用)
+::例:println
 function void println(str){
 	print(str)
 	print("\n")
@@ -16,7 +19,27 @@ function void println(str){
 ::示例定义(有副作用)
 ::例:钍堆安全
 function status isReactorSafe(th_reactor){
-	status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)
+	status= th_reactor.sensor(@heat)<0.01 && th_reactor.sensor(@thorium)>27
+}
+
+::示例定义(带内部标签)
+::例:单位绑定控制
+::绑定一个类型u.type单位, 保存到u, 标记u.fx; (unsafe)跳转到bind.end
+function void onebind(u,u.type,u.fx){
+	if(u==null){
+		::init
+		ubind(u.type)
+		u=@unit
+	}
+	ubind(u)
+	jump(init).when(u.sensor(@dead)!=0)
+	u.cer=u.sensor(@controller)
+	if(u.cer!=@unit){
+		jump(init).when(u.cer!=@this)
+		jump(init).when(u.sensor(@flag)!=u.fx)
+	}
+	uctrl(flag,u.fx)
+	jump2(bind.end)
 }
 
 ::pass

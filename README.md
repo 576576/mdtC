@@ -1,5 +1,5 @@
 # MdtC
-Version: `1.0.1`
+Version: `1.1`
 
 本转换器用于将类Java代码转为mindustry处理器代码.  
 输入: 由类java语言(aka.`mdtc`)编写,`.mdtc`后缀文件.  
@@ -23,8 +23,6 @@ Version: `1.0.1`
 - 完善代码检查/自动补全
 - 支持模块导入
 - 编写为游戏模组
-
-> 初始版本README见[这里](./readme_original.txt)
 ---
 
 ## 功能
@@ -32,6 +30,7 @@ Version: `1.0.1`
 ### 0.注释和标签
 ```githubexpressionlanguage
 ::这是注释,也是标签
+tag(这也是标签)
 ::jump必须绑定标签,eg:
 ::jump(这是注释,也是标签)
 ::没有指定标签的jump会跳到DEFAULT标签
@@ -161,30 +160,48 @@ draw(image,0,0,@copper,32,0,0)
 定义时应指定输入参数和返回值名(void为无返回值)  
 调用时使用funcName(funcArgs)调用
 ```githubexpressionlanguage
-::示例定义(无副作用)
-::例:单位绑定控制
-function void onebind(u){
-::init
-ubind(u.type)
-u=@unit
-
-ubind(u)
-jump(init).when(u.sensor(@dead)!=0)
-u.cer=u.sensor(@controller)
-jump(break).when(u.cer==@unit)
-jump(init).when(u.cer!=@this)
-jump(init).when(u.sensor(@flag)!=u.fx)
-
-::break
-uctrl(flag,u.fx)
-jump2(bind.end)
+::函数
+::示例使用
+println("Hello world")
+message1.pflush()
+for(e=0;e<@links;e=e+1){
+	t=link(e)
+	t.enable(isReactorSafe(t))
 }
+onebind(u,@mono,114514)
 
+
+::示例定义(无副作用)
+::例:println
+function void println(str){
+	print(str)
+	print("\n")
+}
 
 ::示例定义(有副作用)
 ::例:钍堆安全
 function status isReactorSafe(th_reactor){
-status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)
+	status= th_reactor.sensor(@heat)<0.01 && th_reactor.sensor(@thorium)>27
+}
+
+::示例定义(带内部标签)
+::例:单位绑定控制
+::绑定一个类型u.type单位, 保存到u, 标记u.fx; (unsafe)跳转到bind.end
+function void onebind(u,u.type,u.fx){
+	if(u==null){
+		::init
+		ubind(u.type)
+		u=@unit
+	}
+	ubind(u)
+	jump(init).when(u.sensor(@dead)!=0)
+	u.cer=u.sensor(@controller)
+	if(u.cer!=@unit){
+		jump(init).when(u.cer!=@this)
+		jump(init).when(u.sensor(@flag)!=u.fx)
+	}
+	uctrl(flag,u.fx)
+	jump2(bind.end)
 }
 ```
 输出: [`case5.mdtcode`](./sample_cases/case5.mdtcode)
@@ -192,6 +209,7 @@ status=(th_reactor.sensor(@heat)<0.01)&&(th_reactor.sensor(@thorium)>27)
 
 ### 8. 重复
 对代码段多次重复
+等价的1D数组实现, 嵌套即可实现n维数组
 ```githubexpressionlanguage
 ::repeat使用示例
 repeat(u,3){
@@ -201,7 +219,8 @@ repeat(u,3){
 str=strln3("sayounara")
 
 
-function str strln3(str){
+function str strln3(str_in){
+	str=str_in
 	repeat(3){
 		str=str+"\n"
 	}

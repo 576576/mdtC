@@ -117,4 +117,3 @@ ucontrol mine m.x m.y 0 0 0
 end
 ucontrol approach c.x c.y 6 0 0
 ucontrol itemDrop c u.capa 0 0 0
-end
