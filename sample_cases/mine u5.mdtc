@@ -1,23 +1,26 @@
 ::混合代码
 ::例：mine u5
 ::初始设定: 3poly采沙
-if(u.type==0){
+if(init==0){
+	item=@sand
+	u.max=3
+	mine.ratio=0.6
+	print("item:要采的矿 u.max:控制单位数 mine.ratio:采矿比")
+	print("此处选择要采的矿后复制到item")
+	itemSelect=null.sensor(@copper)
+	print("此处选择采矿单位")
 	ubind(@poly)
-	if(init==0){
-    	item=@sand
-    	u.max=3
-    	mine.ratio=0.6
-    	u.bit=2
-    	map.size=max(@mapw,@maph)
-    	u.f0=mapBasedFlag(map.size,u.bit)
-    	init=1
-    	jump(bind.end).when(bind.end==0)
-    	end()
-    }
-	u.type=@unit.sensor(@type)
-	u.capa=@unit.sensor(@itemCapacity)
-	u.fill=u.capa*mine.ratio
-	ubind(null)
+	jump(bind.end).when(bind.end==0)
+	if(@unit!=null){
+		u.type=@unit.sensor(@type)
+		u.capa=@unit.sensor(@itemCapacity)
+		u.fill=u.capa*mine.ratio
+		ubind(null)
+
+		map.size=max(@mapw,@maph)
+		u.f0=mapBasedFlag(map.size,2)
+		init=1
+	}
 	end()
 }
 
@@ -25,7 +28,7 @@ u.fx=u.f0+u.now
 u.now=u.now%u.max
 jump2(+(u.now*12+2))
 repeat(u,5){
-	oneBind(u)
+	onebind(u)
 }
 
 ::bind.end
@@ -60,21 +63,18 @@ function flag mapBasedFlag(map.size,flag.bit){
 	flag=@thisx*x.bit+@thisy*u.bit
 }
 
-function void oneBind(u){
+function void onebind(u){
 	::init
 	ubind(u.type)
 	u=@unit
+
 	ubind(u)
-
-	u.d=@unit.sensor(@dead)
-	jump(init).when(u.d!=0)
-	u.cer=@unit.sensor(@controller)
-	jump(break).when(u.cer==@unit)
-	jump(init).when(u.cer!=@this)
-	u.f=@unit.sensor(@flag)
-	jump(init).when(u.f!=u.fx)
-
-	::break
+	jump(init).when(u.sensor(@dead)!=0)
+	u.cer=u.sensor(@controller)
+	if(u.cer!=@unit){
+		jump(init).when(u.cer!=@this)
+		jump(init).when(u.sensor(@flag)!=u.fx)
+	}
 	uctrl(flag,u.fx)
 	jump2(bind.end)
 }

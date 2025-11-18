@@ -1,25 +1,27 @@
-jump 23 notEqual u.type 0
-ubind @poly
-jump 18 notEqual init 0
+jump 25 notEqual init 0
 set item @sand
 set u.max 3
 set mine.ratio 0.6
-set u.bit 2
+print "item:要采的矿 u.max:控制单位数 mine.ratio:采矿比"
+print "此处选择要采的矿后复制到item"
+sensor itemSelect null @copper
+print "此处选择采矿单位"
+ubind @poly
+jump 90 equal bind.end 0
+jump 24 equal @unit null
+sensor u.type @unit @type
+sensor u.capa @unit @itemCapacity
+op mul u.fill u.capa mine.ratio
+ubind null
 op max map.size @mapw @maph
 op log10 mid.1 map.size 0
-op ceil map.bit mid.1
-op add mid.1 map.bit u.bit
+op ceil map.bit mid.1 0
+op add mid.1 map.bit 2
 op pow x.bit 10 mid.1
 op mul mid.1 @thisx x.bit
 op mul mid.2 @thisy u.bit
 op add u.f0 mid.1 mid.2
 set init 1
-jump 88 equal bind.end 0
-end
-sensor u.type @unit @type
-sensor u.capa @unit @itemCapacity
-op mul u.fill u.capa mine.ratio
-ubind null
 end
 op add u.fx u.f0 u.now
 op mod u.now u.now u.max
@@ -29,61 +31,61 @@ op add @counter @counter mid.2
 ubind u.type
 set u0 @unit
 ubind u0
-sensor u.d @unit @dead
-jump 28 notEqual u.d 0
-sensor u.cer @unit @controller
-jump 38 equal u.cer @unit
-jump 28 notEqual u.cer @this
-sensor u.f @unit @flag
-jump 28 notEqual u.f u.fx
+sensor mid.1 u0 @dead
+jump 30 notEqual mid.1 0
+sensor u.cer u0 @controller
+jump 40 equal u.cer @unit
+jump 30 notEqual u.cer @this
+sensor mid.1 u0 @flag
+jump 30 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u1 @unit
 ubind u1
-sensor u.d @unit @dead
-jump 40 notEqual u.d 0
-sensor u.cer @unit @controller
-jump 50 equal u.cer @unit
-jump 40 notEqual u.cer @this
-sensor u.f @unit @flag
-jump 40 notEqual u.f u.fx
+sensor mid.1 u1 @dead
+jump 42 notEqual mid.1 0
+sensor u.cer u1 @controller
+jump 52 equal u.cer @unit
+jump 42 notEqual u.cer @this
+sensor mid.1 u1 @flag
+jump 42 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u2 @unit
 ubind u2
-sensor u.d @unit @dead
-jump 52 notEqual u.d 0
-sensor u.cer @unit @controller
-jump 62 equal u.cer @unit
-jump 52 notEqual u.cer @this
-sensor u.f @unit @flag
-jump 52 notEqual u.f u.fx
+sensor mid.1 u2 @dead
+jump 54 notEqual mid.1 0
+sensor u.cer u2 @controller
+jump 64 equal u.cer @unit
+jump 54 notEqual u.cer @this
+sensor mid.1 u2 @flag
+jump 54 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u3 @unit
 ubind u3
-sensor u.d @unit @dead
-jump 64 notEqual u.d 0
-sensor u.cer @unit @controller
-jump 74 equal u.cer @unit
-jump 64 notEqual u.cer @this
-sensor u.f @unit @flag
-jump 64 notEqual u.f u.fx
+sensor mid.1 u3 @dead
+jump 66 notEqual mid.1 0
+sensor u.cer u3 @controller
+jump 76 equal u.cer @unit
+jump 66 notEqual u.cer @this
+sensor mid.1 u3 @flag
+jump 66 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u4 @unit
 ubind u4
-sensor u.d @unit @dead
-jump 76 notEqual u.d 0
-sensor u.cer @unit @controller
-jump 86 equal u.cer @unit
-jump 76 notEqual u.cer @this
-sensor u.f @unit @flag
-jump 76 notEqual u.f u.fx
+sensor mid.1 u4 @dead
+jump 78 notEqual mid.1 0
+sensor u.cer u4 @controller
+jump 88 equal u.cer @unit
+jump 78 notEqual u.cer @this
+sensor mid.1 u4 @flag
+jump 78 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 op add bind.end @counter 1
@@ -91,10 +93,10 @@ end
 op add mid.1 u.now 1
 op mod u.now mid.1 u.max
 sensor c.d c @dead
-jump 96 equal c.d 0
+jump 98 equal c.d 0
 ulocate building core 0 null c.x c.y c.f c
-jump 94 equal c.f 0
-jump 99 equal @links 0
+jump 96 equal c.f 0
+jump 101 equal @links 0
 getlink s 0
 op add @counter @counter 1
 set s c
@@ -102,14 +104,14 @@ sensor s.x s @x
 sensor s.y s @y
 sensor u.item @unit @firstItem
 sensor u.count @unit item
-jump 109 notEqual u.item item
-jump 110 lessThan u.count u.fill
+jump 111 notEqual u.item item
+jump 112 lessThan u.count u.fill
 ucontrol approach s.x s.y 6 0 0
 ucontrol itemDrop s u.capa 0 0 0
 end
-jump 117 notEqual u.item null
+jump 119 notEqual u.item null
 ulocate ore core 0 item m.x m.y m.f m
-jump 113 notEqual m.f 0
+jump 115 notEqual m.f 0
 end
 ucontrol boost 1 0 0 0 0
 ucontrol approach m.x m.y 5 0 0
