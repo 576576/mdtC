@@ -1,8 +1,8 @@
 jump 25 notEqual init 0
+print "item:要采的矿 u.max:控制单位数 mine.ratio:采矿比"
 set item @sand
 set u.max 3
 set mine.ratio 0.6
-print "item:要采的矿 u.max:控制单位数 mine.ratio:采矿比"
 print "此处选择要采的矿后复制到item"
 sensor itemSelect null @copper
 print "此处选择采矿单位"
@@ -23,7 +23,7 @@ op mul mid.2 @thisy u.bit
 op add u.f0 mid.1 mid.2
 set init 1
 end
-op add u.fx u.f0 u.now
+op add u.fx u.fx u.now
 op mod u.now u.now u.max
 op mul mid.1 u.now 12
 op add mid.2 mid.1 2
@@ -31,61 +31,61 @@ op add @counter @counter mid.2
 ubind u.type
 set u0 @unit
 ubind u0
-sensor mid.1 u0 @dead
+sensor mid.1 @unit @dead
 jump 30 notEqual mid.1 0
-sensor u.cer u0 @controller
+sensor u.cer @unit @controller
 jump 40 equal u.cer @unit
 jump 30 notEqual u.cer @this
-sensor mid.1 u0 @flag
+sensor mid.1 @unit @flag
 jump 30 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u1 @unit
 ubind u1
-sensor mid.1 u1 @dead
-jump 42 notEqual mid.1 0
-sensor u.cer u1 @controller
+sensor mid.1 @unit @dead
+jump 30 notEqual mid.1 0
+sensor u.cer @unit @controller
 jump 52 equal u.cer @unit
-jump 42 notEqual u.cer @this
-sensor mid.1 u1 @flag
-jump 42 notEqual mid.1 u.fx
+jump 30 notEqual u.cer @this
+sensor mid.1 @unit @flag
+jump 30 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u2 @unit
 ubind u2
-sensor mid.1 u2 @dead
-jump 54 notEqual mid.1 0
-sensor u.cer u2 @controller
+sensor mid.1 @unit @dead
+jump 30 notEqual mid.1 0
+sensor u.cer @unit @controller
 jump 64 equal u.cer @unit
-jump 54 notEqual u.cer @this
-sensor mid.1 u2 @flag
-jump 54 notEqual mid.1 u.fx
+jump 30 notEqual u.cer @this
+sensor mid.1 @unit @flag
+jump 30 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u3 @unit
 ubind u3
-sensor mid.1 u3 @dead
-jump 66 notEqual mid.1 0
-sensor u.cer u3 @controller
+sensor mid.1 @unit @dead
+jump 30 notEqual mid.1 0
+sensor u.cer @unit @controller
 jump 76 equal u.cer @unit
-jump 66 notEqual u.cer @this
-sensor mid.1 u3 @flag
-jump 66 notEqual mid.1 u.fx
+jump 30 notEqual u.cer @this
+sensor mid.1 @unit @flag
+jump 30 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 ubind u.type
 set u4 @unit
 ubind u4
-sensor mid.1 u4 @dead
-jump 78 notEqual mid.1 0
-sensor u.cer u4 @controller
+sensor mid.1 @unit @dead
+jump 30 notEqual mid.1 0
+sensor u.cer @unit @controller
 jump 88 equal u.cer @unit
-jump 78 notEqual u.cer @this
-sensor mid.1 u4 @flag
-jump 78 notEqual mid.1 u.fx
+jump 30 notEqual u.cer @this
+sensor mid.1 @unit @flag
+jump 30 notEqual mid.1 u.fx
 ucontrol flag u.fx 0 0 0 0
 set @counter bind.end
 op add bind.end @counter 1

@@ -1,12 +1,13 @@
 public class CodeSpace {
     /**
-     * {@code CodeSpace}类用于启用java自动补全来编写mdtc代码
-     * 使用 tag()包裹取代::开头编写注释
-     * 对于//整除号支持较差.
-     * 在main中编写mdtc代码
+     * <p>{@code CodeSpace}类用于启用java自动补全来编写mdtc代码</p>
+     * <p>使用 tag()或//包裹取代::开头编写注释</p>
+     * <p>在main中编写mdtc代码</p>
      */
-    public static void main(String[] args) {
-        //@todo
+    static void main() {
+
     }
+
+    //todo: 编写用于提供自动补全的函数体
 }
 

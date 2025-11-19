@@ -3,7 +3,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class MdtcConverterReverse {
+public class CodeDecompiler {
     static void main() {
         //todo: 将连串带有mid.x的op及set转为赋值
         //todo: 转换jump为原始带标签jump
@@ -13,7 +13,7 @@ public class MdtcConverterReverse {
     /**
      * 主转换函数入口
      */
-    public static stdIOStream convertCodeBlock(String codeBlock){
+    public static stdIOStream decompile(String codeBlock){
         ArrayList<String> bashList = new ArrayList<>();
 
         for (String line : codeBlock.split("\n")) {

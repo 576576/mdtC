@@ -1,16 +1,15 @@
-::repeat使用示例
+import modules/example
+::todo:实现import from as
+::import
+
+::repeat和import使用示例
+u.fx=u.f0+u.now
+	u.now=u.now%u.max
+	jump2(+(u.now*12+2))
 repeat(u,3){
-	u=link(e)
-	e=e+1
+	ubind_s(@poly,1919810,u)
 }
-str=strln3("sayounara")
-
-
-function str strln3(str_in){
-	str=str_in
-	repeat(3){
-		str=str+"\n"
-	}
-}
+::bind.end
+	u.now=(u.now+1)%u.max
 
 ::pass

@@ -1,9 +1,9 @@
-public class MdtcFormater {
+public class CodeFormatter {
     static void main() {
 
     }
 
-    public static String convertToFormat(String codeBlock) {
+    public static String format(String codeBlock) {
         final String[] keysStart = {"do{", "for(", "if(","function ","repeat("};
         final String[] keysEnd = {"}while(", "}"};
         final String[] lines = codeBlock.split("\n");

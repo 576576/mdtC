@@ -10,7 +10,7 @@ public class Utils {
     final static String[] dotCtrlCodes = {".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
             ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write("};
     final static String[] ctrlCodes = {"print(", "printchar(", "format(", "wait(", "stop(",
-            "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf("};
+            "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf(","tag("};
     final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
         put("op", 2);
         put("sensor", 1);
@@ -77,7 +77,7 @@ public class Utils {
         }
     }
 
-    static void openWithSystemExplorer(String filePath) {
+    static void openWithExplorer(String filePath) {
         File directory = new File(filePath);
         if (Desktop.isDesktopSupported()) {
             Desktop desktop = Desktop.getDesktop();
@@ -87,46 +87,6 @@ public class Utils {
                 printError("Unable to open directory." + e.getMessage());
             }
         }
-    }
-
-    static void formatFile(String filePath, String outPath) {
-        String inputContent = readFile(filePath);
-
-        String convertedContent = MdtcFormater.convertToFormat(inputContent);
-        if (convertedContent.isEmpty()) {
-            IO.println("Nothing to format.");
-            return;
-        }
-
-        writeFile(outPath, convertedContent);
-        IO.println("Formatted output at:\n> " + outPath);
-    }
-
-    static void convertFile(String filePath, String outPath) {
-        if (Main.isToFormat) formatFile(filePath, filePath);
-
-        String inputContent = readFile(filePath);
-
-        stdIOStream convertedContent = MdtcConverter.convertCodeBlock(inputContent);
-        String outContent = convertedContent.toString();
-
-        writeFile(outPath, outContent);
-        IO.println("Compiled output at:\n> " + outPath);
-
-        if (Main.isOpenOutput) openWithSystemExplorer(outPath);
-    }
-
-    static void convertFileReverse(String filePath, String outPath) {
-        String inputContent = readFile(filePath);
-
-        stdIOStream convertedContent = MdtcConverterReverse.convertCodeBlock(inputContent);
-        String outContent = convertedContent.toString();
-
-        writeFile(outPath, outContent);
-        IO.println("Reversed output at:\n> " + outPath);
-
-        if (Main.isToFormat) formatFile(outPath, outPath);
-        if (Main.isOpenOutput) openWithSystemExplorer(outPath);
     }
 
     static String padParams(String[] params, int paramNum) {

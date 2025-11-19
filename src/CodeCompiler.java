@@ -2,12 +2,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-public class MdtcConverter {
-    static Map<String, stdIOStream> funcMap = new HashMap<>();
-
+public class CodeCompiler {
     static void main() {
-        String str = "u=1\njump().when(u.sensor(@flag)!=u.fx)";
-        IO.println(convertCodeBlock(str));
+        IO.println(convertCtrl(stdIOStream.from("tag(666)")).toPlainString());
     }
 
     /**
@@ -15,37 +12,35 @@ public class MdtcConverter {
      *
      * @return {@code stdIOStream}
      */
-    public static stdIOStream convertCodeBlock(String codeBlock) {
+    public static stdIOStream compile(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
+        Map<String, stdIOStream> funcMap = new HashMap<>();
 
         codeBlock = insertImport(codeBlock);
-        codeBlock = unfoldRepeat(codeBlock);
 
-        var funcStartIndex = codeBlock.indexOf("\nfunction");
+        int funcStartIndex = codeBlock.indexOf("function ");
         if (funcStartIndex != -1) {
             String funcBlock = codeBlock.substring(funcStartIndex);
-            codeBlock = codeBlock.substring(0, funcStartIndex);
-
             funcMap = generateFuncMap(funcBlock);
-            codeBlock = insertFunc(codeBlock);
+            codeBlock = codeBlock.substring(0, funcStartIndex);
         }
 
-        if (Main.isGeneratePrimeCode) {
-            String filePath = Main.filePath;
-            if (!filePath.endsWith("_prime.mdtc") && filePath.endsWith(".mdtc")) {
-                filePath = filePath.replace(".mdtc", "_prime.mdtc");
-                String writeContent = MdtcFormater.convertToFormat(codeBlock);
-                Utils.writeFile(filePath, writeContent);
-
-                IO.println("PrimeCode output at:\n" + filePath);
-            } else IO.println("Skip writing prime code.");
+        //todo:清理代码 (暂定3回, 适用大多数情形)
+        String codeCache = "";
+        codeBlock = unfoldRepeat(codeBlock);
+        for (int i = 0; i < 3; i++) {
+            while (!codeBlock.equals(codeCache)) {
+                codeCache = codeBlock;
+                codeBlock = insertFunc(codeBlock, funcMap);
+            }
+            codeBlock = unfoldRepeat(codeBlock);
         }
 
-        int refMax = 1;
+        int refNumMax = 1;
         for (String line : codeBlock.split("\n")) {
             if (!line.trim().isEmpty()) {
                 stdIOStream convertedLine = convertCodeLine(stdIOStream.from(line.trim()));
-                refMax = Math.max(refMax, convertedLine.stat());
+                refNumMax = Math.max(refNumMax, convertedLine.stat());
                 bashList.addAll(convertedLine.toStringArray());
             }
         }
@@ -54,9 +49,20 @@ public class MdtcConverter {
         if (!bashList.contains("::DEFAULT"))
             bashList.add(1, "::DEFAULT");
 
-        stdIOStream result_clear = convertSet(stdIOStream.from(bashList, refMax));
-        stdIOStream result_pre_jump = convertJump(result_clear);
-        return convertLink(result_pre_jump);
+        stdIOStream result_set = convertSet(stdIOStream.from(bashList, refNumMax));
+        if (Main.isGeneratePrimeCode) {
+            String filePath = Main.filePath;
+            if (filePath.endsWith(".mdtc") && !filePath.endsWith("_prime.mdtc")) {
+                String primeCodePath = filePath.replace(".mdtc", "_prime.mdtc");
+                String writeContent = CodeFormatter.format(codeBlock);
+                Utils.writeFile(primeCodePath, writeContent);
+
+                IO.println("PrimeCode output at:\n> " + primeCodePath);
+            } else IO.println("Skip writing prime code.");
+        }
+
+        stdIOStream result_jump = convertJump(result_set);
+        return convertLink(result_jump);
     }
 
     private static String insertImport(String codeBlock) {
@@ -67,7 +73,13 @@ public class MdtcConverter {
         StringBuilder codeBlockBuilder = new StringBuilder(codeBlock);
         for (var line : importLines) {
             String importPath = line.substring(6).trim();
-            codeBlockBuilder.append("\n").append(Utils.readFile(importPath));
+            if (!importPath.endsWith("mdtc")) importPath += ".libmdtc";
+            String importBlock = Utils.readFile(importPath);
+            int funcStartIndex = importBlock.indexOf("function ");
+            if (funcStartIndex != -1) {
+                String funcBlock = importBlock.substring(funcStartIndex);
+                codeBlockBuilder.append("\n").append(funcBlock);
+            }
         }
         codeBlock = codeBlockBuilder.toString();
 
@@ -165,7 +177,7 @@ public class MdtcConverter {
      *
      * @return {@code stdIOStream}
      */
-    private static String insertFunc(String codeBlock) {
+    private static String insertFunc(String codeBlock, Map<String, stdIOStream> funcMap) {
         var ref = new Object() {
             int midNum = 1;
         };
@@ -294,13 +306,13 @@ public class MdtcConverter {
             put("tag(", s -> "::" + s);
         }};
 
-        final List<String> jumpCtrlKeys = List.of(new String[]{"jump(", "jump2("});
+        final List<String> ignoreKeys = List.of(new String[]{"jump(", "jump2("});
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             if (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
                 String[] splitList = Utils.stringSplitPro(s);
-                if (splitList.length > 1 && !jumpCtrlKeys.contains(entry.getKey())) {
+                if (splitList.length > 1 && !ignoreKeys.contains(entry.getKey())) {
                     stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
@@ -395,13 +407,13 @@ public class MdtcConverter {
             });
         }};
 
-        final List<String> chainDCtrlKeys = List.of(new String[]{"shoot(", "ulocate("});
+        final List<String> ignoreKeys = List.of(new String[]{"shoot(", "ulocate("});
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
                 String[] splitList = Utils.stringSplit(s);
-                if (splitList.length > 1 && !chainDCtrlKeys.contains(entry.getKey())) {
+                if (splitList.length > 1 && !ignoreKeys.contains(entry.getKey())) {
                     stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
@@ -852,10 +864,10 @@ public class MdtcConverter {
      * 将函数块分离到函数,暂存于funcMap
      * {@code funcMap}结构: key:函数名, bash:函数体, expr:返回量, stat:标签数
      */
-    static Map<String, stdIOStream> generateFuncMap(String funcBlock) {
+    static HashMap<String, stdIOStream> generateFuncMap(String funcBlock) {
         final String keyStart = "function", keyEnd = "}";
         final String[] keysJump = {"do{", "for(", "if("};
-        Map<String, stdIOStream> funcMap = new HashMap<>();
+        HashMap<String, stdIOStream> funcMap = new HashMap<>();
         ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
         ArrayList<String> bashCache = new ArrayList<>();
         int matchIndex = 0;
@@ -869,11 +881,10 @@ public class MdtcConverter {
                     String ioVariables = returnValue + " " + funcArgs;
                     preserveVars = new ArrayList<>(List.of(ioVariables.split(" ")));
                     preserveTags = new ArrayList<>(bashCache.stream().
-                            filter(line -> line.startsWith("::")).toList());
-                    preserveTags.replaceAll(s -> s.substring(2));
+                            filter(line -> line.trim().startsWith("::")).toList());
+                    preserveTags.replaceAll(s -> s.trim().substring(2));
 
-                    ArrayList<String> tagsList = preserveTags;
-                    ArrayList<String> varsList = preserveVars;
+                    ArrayList<String> tagsList = preserveTags, varsList = preserveVars;
                     bashCache.replaceAll(s -> Utils.replaceReserve(s, varsList, tagsList));
 
                     stdIOStream funcStream = stdIOStream.from(bashCache, returnValue, preserveTags.size());

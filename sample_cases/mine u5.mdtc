@@ -2,10 +2,10 @@
 ::例：mine u5
 ::初始设定: 3poly采沙
 if(init==0){
+	print("item:要采的矿 u.max:控制单位数 mine.ratio:采矿比")
 	item=@sand
 	u.max=3
 	mine.ratio=0.6
-	print("item:要采的矿 u.max:控制单位数 mine.ratio:采矿比")
 	print("此处选择要采的矿后复制到item")
 	itemSelect=null.sensor(@copper)
 	print("此处选择采矿单位")
@@ -24,37 +24,18 @@ if(init==0){
 	end()
 }
 
-u.fx=u.f0+u.now
-u.now=u.now%u.max
-jump2(+(u.now*12+2))
-repeat(u,5){
-	onebind(u)
-}
+ubinds5(u.type,u.fx,u.max)
 
-::bind.end
-bind.end=@counter+1
-end()
-u.now=(u.now+1)%u.max
+getCore(c)
 
-c.d=c.sensor(@dead)
-if(c.d!=0){
-	::clocate
-	c.ulocate(core)
-	jump(clocate).when(c.f==0)
-}
-
+::todo:实现if-else(目前凑合)
 if(@links!=0){
 	s=link(0)
 	jump2(+1)
 }
 s=c
-s.x=s.sensor(@x)
-s.y=s.sensor(@y)
 
-u.item=@unit.sensor(@firstItem)
-u.count=@unit.sensor(item)
-mineModule(mode.to)
-
+mine(item,s)
 
 
 function flag mapBasedFlag(map.size,flag.bit){
@@ -63,23 +44,49 @@ function flag mapBasedFlag(map.size,flag.bit){
 	flag=@thisx*x.bit+@thisy*u.bit
 }
 
-function void onebind(u){
+function void ubind_us(u.type,u.fx,u){
 	::init
 	ubind(u.type)
 	u=@unit
-
 	ubind(u)
-	jump(init).when(u.sensor(@dead)!=0)
-	u.cer=u.sensor(@controller)
+
+	jump(init).when(@unit.sensor(@dead)!=0)
+	u.cer=@unit.sensor(@controller)
 	if(u.cer!=@unit){
 		jump(init).when(u.cer!=@this)
-		jump(init).when(u.sensor(@flag)!=u.fx)
+		jump(init).when(@unit.sensor(@flag)!=u.fx)
 	}
 	uctrl(flag,u.fx)
 	jump2(bind.end)
 }
 
-function void mineModule(mode.to){
+function void ubinds5(u.type,u.f0,u.max){
+	u.fx=u.f0+u.now
+	u.now=u.now%u.max
+	jump2(+(u.now*12+2))
+	repeat(u,5){
+		ubind_us(u.type,u.fx,u)
+	}
+	tag(bind.end)
+	bind.end=@counter+1
+	end()
+	u.now=(u.now+1)%u.max
+}
+
+function void getCore(c){
+	c.d=c.sensor(@dead)
+	if(c.d!=0){
+		do{
+			c.ulocate(core)
+		}while(c.f==0)
+	}
+}
+
+function void mine(item,s){
+	s.x=s.sensor(@x)
+	s.y=s.sensor(@y)
+	u.item=@unit.sensor(@firstItem)
+	u.count=@unit.sensor(item)
 	if(u.item==item){
 		jump(mine2ore).when(u.count<u.fill)
 		::drop2target
@@ -101,5 +108,3 @@ function void mineModule(mode.to){
 	uctrl(approach,c.x,c.y,6)
 	uctrl(itemDrop,c,u.capa)
 }
-
-::pass

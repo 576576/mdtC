@@ -30,10 +30,10 @@ Version: `1.1`
 ### 0.注释和标签
 ```githubexpressionlanguage
 ::这是注释,也是标签
-tag(这也是标签)
+tag(这也是标签,而且是全局标签)
 ::jump必须绑定标签,eg:
 ::jump(这是注释,也是标签)
-::没有指定标签的jump会跳到DEFAULT标签
+::没有指定标签的jump会跳到DEFAULT
 ::代码头尾自带HEAD和END标签
 ```
 

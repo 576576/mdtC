@@ -6,7 +6,10 @@
       <w>emod</w>
       <w>getlink</w>
       <w>idiv</w>
+      <w>libmdtc</w>
       <w>logn</w>
+      <w>maph</w>
+      <w>mapw</w>
       <w>mdtc</w>
       <w>mdtcode</w>
       <w>packcolor</w>
@@ -14,6 +17,8 @@
       <w>printchar</w>
       <w>printflush</w>
       <w>shootp</w>
+      <w>thisx</w>
+      <w>thisy</w>
       <w>ubind</w>
       <w>ucontrol</w>
       <w>uctrl</w>
