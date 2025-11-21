@@ -5,12 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class Utils {
     final static String[] dotCtrlCodes = {".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
             ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write("};
     final static String[] ctrlCodes = {"print(", "printchar(", "format(", "wait(", "stop(",
-            "end(", "ubind(", "uctrl(", "jump(", "jump2(", "printf(","tag("};
+            "end(", "ubind(", "uctrl(", "ushoot(", "jump(", "jump2(", "printf(", "tag("};
     final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
         put("op", 2);
         put("sensor", 1);
@@ -20,15 +21,17 @@ public class Utils {
         put("lookup", 2);
         put("packcolor", 1);
         put("read", 1);
+        put("set", 1);
     }};
     final static Map<String, String> operatorReverseMap = new HashMap<>() {{
         put("equal", "notEqual");
+        put("strictEqual", "notEqual");
+        put("always", "notEqual");
         put("notEqual", "equal");
         put("lessThan", "greaterThanEq");
         put("lessThanEq", "greaterThan");
         put("greaterThan", "lessThanEq");
         put("greaterThanEq", "lessThan");
-        put("strictEqual", "notEqual");
     }};
     final static Map<String, String> operatorKeyMap = new HashMap<>() {{
         put("+", "add");
@@ -55,16 +58,17 @@ public class Utils {
         put("^", "xor");
         put("=", "set");
     }};
+    private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
 
     static void main() {
-
+        IO.println(bracketPartSplit("7,min(8,9)"));
     }
 
     static String readFile(String filePath) {
         try {
             return Files.readString(Paths.get(filePath));
         } catch (IOException e) {
-            printError("Unable to read file." + e.getMessage());
+            printError("Unable to read file: " + e.getMessage());
             return "";
         }
     }
@@ -89,13 +93,15 @@ public class Utils {
         }
     }
 
-    static String padParams(String[] params, int paramNum) {
-        if (params.length > paramNum) params = Arrays.copyOf(params, paramNum);
-        while (params.length < paramNum) {
-            params = Arrays.copyOf(params, params.length + 1);
-            params[params.length - 1] = "0";
-        }
+    static String padParams(String[] params, int paramNum, String defaultParam) {
+        params = Arrays.copyOf(params, paramNum);
+        for (int i = 0; i < params.length; i++)
+            if (params[i] == null) params[i] = defaultParam;
         return String.join(" ", params);
+    }
+
+    static String padParams(String[] params, int paramNum) {
+        return padParams(params, paramNum, "0");
     }
 
     static String padParams(String paramString, int paramNum) {
@@ -120,6 +126,7 @@ public class Utils {
     static int getEndDotCtrl(String expr, int start) {
         int end = getEndBracket(expr, start);
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
+            if (expr.startsWith(".^", end + 1)) return end;
             for (String key : dotCtrlCodes) {
                 if (expr.startsWith(key, end + 1)) return end;
             }
@@ -144,12 +151,19 @@ public class Utils {
      *
      * @return 变量分离的字符串数组
      */
-    public static String[] stringSplit(String str) {
+    public static List<String> stringSplit(String str) {
+        final List<Character> keysSplit = List.of(',', ';');
         ArrayList<String> tokens = new ArrayList<>();
         StringBuilder token = new StringBuilder();
 
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
+            if (keysSplit.contains(c)) {
+                tokens.add(token.toString().trim());
+                token = new StringBuilder();
+                tokens.add(c + "");
+                continue;
+            }
             boolean isOperator = false;
             for (Operator o : Operator.values()) {
                 if (str.startsWith(o.value, i)) {
@@ -167,83 +181,133 @@ public class Utils {
         }
         if (!token.toString().trim().isEmpty())
             tokens.add(token.toString().trim());
-        return tokens.toArray(String[]::new);
+
+        for (int i = 2; i < tokens.size() - 1; i++) {
+            if (tokens.get(i - 2).equals("(") && tokens.get(i - 1).equals("-") && isNumeric(tokens.get(i)) && tokens.get(i + 1).equals(")")) {
+                tokens.set(i - 2, "-" + tokens.get(i));
+                tokens.remove(i - 1);
+                tokens.remove(i - 1);
+                tokens.remove(i - 1);
+                i += 2;
+            }
+        }
+        return tokens;
     }
 
-    static String[] stringSplitPro(String str) {
-        if (str.isEmpty()) return new String[0];
-        final String[] keysFormer = {".sensor", ".read"}, keysMiddle = {",", ";"};
-        var stringSplit = stringSplit(str);
-        ArrayList<String> tokens = new ArrayList<>(List.of(stringSplit));
+    static List<String> bracketPartSplit(String str) {
+        final List<String> keysSplit = List.of(",", ";");
+        if (str.isEmpty()) return List.of();
+        List<String> tokens = new ArrayList<>();
+        List<String> splitList = stringSplit(str);
+        int matchIndex = 0;
+        StringBuilder token = new StringBuilder();
+        for (String part : splitList) {
+            if (matchIndex == 0 && keysSplit.contains(part)) {
+                tokens.add(token.toString().trim());
+                token = new StringBuilder();
+                continue;
+            } else if (part.equals("(")) matchIndex++;
+            else if (part.equals(")")) matchIndex--;
+            token.append(part);
+        }
+        if (!token.isEmpty()) tokens.add(token.toString().trim());
+        return tokens;
+    }
+
+    static List<String> stringSplitPro(String str) {
+        if (str.isEmpty()) return List.of();
+        final String[] keysDot = {".sensor", ".read"};
+        List<String> tokens = stringSplit(str);
         String tokenFirst = tokens.getFirst();
         if (tokenFirst.startsWith("::") && !tokenFirst.equals("::")) {
             tokens.set(0, "::");
             tokens.add(1, tokenFirst.substring(2));
         }
         for (int i = 1; i < tokens.size(); i++) {
-            String token_now = tokens.get(i), token_former, token_middle;
+            String token_now = tokens.get(i), token_dot;
             if (token_now.startsWith("::") && !token_now.equals("::")) {
                 tokens.set(i, "::");
                 tokens.add(i + 1, token_now.substring(2));
             }
             if (token_now.equals("(")) {
-                token_former = tokens.get(i - 1);
-                for (var key : keysFormer) {
-                    if (token_former.endsWith(key) && !token_former.equals(key)) {
+                token_dot = tokens.get(i - 1);
+                for (var key : keysDot) {
+                    if (token_dot.endsWith(key) && !token_dot.equals(key)) {
                         tokens.remove(i - 1);
                         tokens.add(i - 1, key);
-                        tokens.add(i - 1, token_former.substring(0, token_former.indexOf(key)));
+                        tokens.add(i - 1, token_dot.substring(0, token_dot.indexOf(key)));
                         i++;
                         break;
                     }
                 }
-                token_middle = tokens.get(i + 1);
-                for (var key : keysMiddle) {
-                    String[] tokenSplit = token_middle.split(key);
-                    if (tokenSplit.length < 2) continue;
-                    tokens.remove(i + 1);
-                    for (int k = 0; k < tokenSplit.length; k++) {
-                        tokens.add(i + 1 + k * 2, tokenSplit[k]);
-                        tokens.add(i + 2 + k * 2, key);
-                    }
-                    tokens.remove(i + tokenSplit.length * 2);
-                    i = i + tokenSplit.length * 2 - 1;
-                }
             }
         }
-        return tokens.toArray(String[]::new);
+        return tokens;
     }
 
     static String stringOf(String[] arr) {
         return Arrays.stream(arr).reduce("", (a, b) -> a + b);
     }
 
+    static String stringOf(List<String> list) {
+        return list.stream().reduce("", (a, b) -> a + b);
+    }
+
     static String listToCodeBlock(ArrayList<String> bashList) {
-        return bashList.stream().reduce("", (a, b) -> a + "\n" + b);
+        return bashList.stream().reduce("", (a, b) -> a + "\n" + b).trim();
     }
 
     /**
-     * 转换所有已声明变量和函数内标签到保留变量名和标签
+     * 转换所有已声明变量到保留变量名
      */
-    static String replaceReserve(String s, ArrayList<String> reserveVars, ArrayList<String> reserveTags) {
-        var splitList = stringSplitPro(s);
-        for (int i = 0; i < splitList.length; i++) {
-            for (int j = 0; j < reserveVars.size(); j++) {
-                var key = reserveVars.get(j);
-                if (splitList[i].equals(key))
-                    splitList[i] = "ARG." + j;
-            }
-            for (int j = 0; j < reserveTags.size(); j++) {
-                var key = reserveTags.get(j);
-                if (splitList[i].equals(key))
-                    splitList[i] = "PRESERVE_TAG." + j;
+    static String replaceVars(String s, List<String> varsList, List<String> replaceToList) {
+        if (varsList.size() != replaceToList.size()) {
+            Utils.printError("Unable to deal with " + varsList + replaceToList);
+        }
+        List<String> splitList = stringSplitPro(s);
+        for (int i = 0; i < splitList.size(); i++) {
+            for (int j = 0; j < varsList.size(); j++) {
+                if (splitList.get(i).equals(varsList.get(j)))
+                    splitList.set(i, replaceToList.get(j));
             }
         }
         return stringOf(splitList);
     }
 
+    static String replaceVar(String s, String var, String replaceToVar) {
+        List<String> splitList = stringSplitPro(s);
+        for (int i = 0; i < splitList.size(); i++) {
+            if (splitList.get(i).equals(var))
+                splitList.set(i, replaceToVar);
+        }
+        return stringOf(splitList);
+    }
+
+    /**
+     * 转换所有已声明标签到保留变量名和标签
+     */
+    static String replaceTags(String s, List<String> tagsList, String prefix) {
+        final List<String> keyList = List.of("::", "jump");
+        List<String> splitList = stringSplitPro(s);
+        if (splitList.size() < 2 || !keyList.contains(splitList.getFirst())) return s;
+        for (int i = 0; i < keyList.size(); i++) {
+            if (splitList.getFirst().equals(keyList.get(i))) {
+                String tag = splitList.get(i + 1);
+                if (tagsList.contains(tag)) splitList.set(i + 1, prefix + tag);
+            }
+        }
+        return stringOf(splitList);
+    }
+
+    static String reverseCondition(String codeLine) {
+        for (var op : operatorReverseMap.entrySet())
+            if (codeLine.contains(op.getKey()))
+                return codeLine.replace(op.getKey(), op.getValue());
+        return codeLine;
+    }
+
     static boolean isSpecialControl(String codeLine) {
-        String[] keys = new String[]{"::", "}", "do{", "for(", "if("};
+        String[] keys = new String[]{"::", "}", "do{", "for(", "if(", "else{"};
         for (String key : keys) {
             if (codeLine.startsWith(key)) return true;
         }
@@ -251,17 +315,18 @@ public class Utils {
     }
 
     static int getEndBracket(String expr, int start) {
+        if (start < 0) return -1;
         Stack<Integer> stack = new Stack<>();
         for (int i = start; i < expr.length(); i++) {
             if (expr.charAt(i) == '(') {
                 stack.push(i);
             } else if (expr.charAt(i) == ')') {
-                if (stack.isEmpty()) return -1; // Mismatched closing bracket
+                if (stack.isEmpty()) return -1;
                 stack.pop();
-                if (stack.isEmpty()) return i; // Found the matching closing bracket
+                if (stack.isEmpty()) return i;
             }
         }
-        return -1; // No matching closing bracket found
+        return -1;
     }
 
     static String getCondition(String codeLine) {
@@ -297,13 +362,17 @@ public class Utils {
         return paramsMap;
     }
 
+    public static boolean isNumeric(String str) {
+        return str != null && NUMBER_PATTERN.matcher(str).matches();
+    }
+
     /**
      * 将中置表达式转为逆波兰表达式
      *
      * @return 逆波兰表达式数组
      */
     public static String[] generateRpn(String str) {
-        return rpn(new Stack<>(), stringSplit(str));
+        return rpn(new Stack<>(), stringSplit(str).toArray(String[]::new));
     }
 
     public static String[] rpn(Stack<String> operators, String[] tokens) {

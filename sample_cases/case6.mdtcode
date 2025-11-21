@@ -1,10 +1,9 @@
-getlink u0 e
-op add e e 1
-getlink u1 e
-op add e e 1
-getlink u2 e
-op add e e 1
-set FUNC.1 "sayounara"
-op add FUNC.1 FUNC.1 "\n"
-op add FUNC.1 FUNC.1 "\n"
-op add str FUNC.1 "\n"
+op pow mid.1 10 5
+op rand mid.2 mid.1 0
+op floor flag1 mid.2 0
+op pow mid.1 10 5
+op rand mid.2 mid.1 0
+op floor flag2 mid.2 0
+op pow mid.1 10 5
+op rand mid.2 mid.1 0
+op floor flag3 mid.2 0

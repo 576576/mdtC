@@ -2,25 +2,27 @@ print "Hello world"
 print "\n"
 printflush message1
 set e 0
+jump 14 greaterThanEq e @links
 getlink t e
 sensor mid.1 t @heat
 sensor mid.2 t @thorium
 op lessThan mid.3 mid.1 0.01
 op greaterThan mid.4 mid.2 27
-op land FUNC.2 mid.3 mid.4
-control enabled t FUNC.2 0 0 0
+op land FUNC.2_status mid.3 mid.4
+control enabled t FUNC.2_status 0 0 0
 op add e e 1
-jump 4 lessThan e @links
-jump 16 notEqual u null
+jump 4 always 0 0
+jump 17 notEqual u null
 ubind @mono
 set u @unit
 ubind u
 sensor mid.1 u @dead
-jump 14 notEqual mid.1 0
+jump 15 notEqual mid.1 0
 sensor u.cer u @controller
-jump 24 equal u.cer @unit
-jump 14 notEqual u.cer @this
+jump 25 equal u.cer @unit
+jump 15 notEqual u.cer @this
 sensor mid.1 u @flag
-jump 14 notEqual mid.1 114514
+jump 15 notEqual mid.1 114514
 ucontrol flag 114514 0 0 0 0
 set @counter bind.end
+end

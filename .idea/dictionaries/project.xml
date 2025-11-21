@@ -17,6 +17,7 @@
       <w>printchar</w>
       <w>printflush</w>
       <w>shootp</w>
+      <w>targetp</w>
       <w>thisx</w>
       <w>thisy</w>
       <w>ubind</w>
@@ -26,6 +27,7 @@
       <w>unpackcolor</w>
       <w>upcolor</w>
       <w>uradar</w>
+      <w>ushoot</w>
       <w>ushr</w>
     </words>
   </dictionary>

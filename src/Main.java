@@ -4,10 +4,9 @@ import java.util.List;
 
 public class Main {
     private static final String VERSION_TAG = "1.1";
-
-    public static boolean isGeneratePrimeCode = false;
     public static boolean isOpenOutput, isToFormat, isFormatOnly;
     public static String filePath = "", outPath = "";
+    public static int primeCodeLevel = 0;
 
     static void main(String[] args) {
         final List<String> supportFormatList = List.of(new String[]{".mdtc", ".mdtcode", ".libmdtc"});
@@ -20,7 +19,7 @@ public class Main {
                 .addOption("i", "file", true, "指定文件路径")
                 .addOption("o", "output", true, "指定输出路径")
                 .addOption("oo", "open-out", false, "编译后打开输出")
-                .addOption("gpc", "generate-prime-code", false, "产生中间代码(硬链接前)");
+                .addOption("gpc", "generate-prime-code", true, "产生中间代码(硬链接前)");
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -28,10 +27,10 @@ public class Main {
             if (cmd.hasOption("v")) IO.println("MdtC Compiler v" + Main.VERSION_TAG);
             isToFormat = cmd.hasOption("f");
             isFormatOnly = cmd.hasOption("fo");
-            isGeneratePrimeCode = cmd.hasOption("gpc");
             if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
             if (cmd.hasOption("o")) outPath = cmd.getOptionValue("o");
             isOpenOutput = cmd.hasOption("oo");
+            if (cmd.hasOption("gpc")) primeCodeLevel = Integer.parseInt(cmd.getOptionValue("gpc"));
         } catch (ParseException e) {
             System.err.println("解析命令行参数失败: " + e.getMessage());
         }

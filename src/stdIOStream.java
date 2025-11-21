@@ -27,36 +27,36 @@ public record stdIOStream(ArrayList<String> bash, String expr, int stat) {
         this(bash, "", stat);
     }
 
-    public static stdIOStream empty() {
+    public static stdIOStream of() {
         return new stdIOStream();
     }
 
-    public static stdIOStream from(String expr) {
+    public static stdIOStream of(String expr) {
         return new stdIOStream(expr);
     }
 
-    public static stdIOStream from(ArrayList<String> bash) {
+    public static stdIOStream of(ArrayList<String> bash) {
         return new stdIOStream(bash);
     }
 
-    public static stdIOStream from(String expr, int stat) {
+    public static stdIOStream of(String expr, int stat) {
         return new stdIOStream(expr, stat);
     }
 
 
-    public static stdIOStream from(ArrayList<String> bash, int stat) {
+    public static stdIOStream of(ArrayList<String> bash, int stat) {
         return new stdIOStream(bash, stat);
     }
 
-    public static stdIOStream from(ArrayList<String> bash, String expr) {
+    public static stdIOStream of(ArrayList<String> bash, String expr) {
         return new stdIOStream(bash, expr);
     }
 
-    public static stdIOStream from(ArrayList<String> bash, String expr, int stat) {
+    public static stdIOStream of(ArrayList<String> bash, String expr, int stat) {
         return new stdIOStream(bash, expr, stat);
     }
 
-    public static stdIOStream from(String[] bash) {
+    public static stdIOStream of(String[] bash) {
         return new stdIOStream(new ArrayList<>(List.of(bash)));
     }
 

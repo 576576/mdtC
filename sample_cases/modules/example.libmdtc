@@ -4,15 +4,13 @@ function void println(str){
 	print("\n")
 }
 
-::安全型ubind, 牺牲少许效率
-::绑定一个单位, 类型u.type, 标记u.fx, 保存到u; 跳转到bind.end
-function void ubind_s(u.type,u.fx,u){
+::打包型ubind, 包含防抢检测
+::绑定一个单位, 类型u.type, 标记u.fx, 保存到@unit
+function void ubind(u.type,u.fx){
 	if(u==null){
 		::init
 		ubind(u.type)
-		u=@unit
 	}
-	ubind(u)
 	jump(init).when(@unit.sensor(@dead)!=0)
 	u.cer=@unit.sensor(@controller)
 	if(u.cer!=@unit){
@@ -20,45 +18,50 @@ function void ubind_s(u.type,u.fx,u){
 		jump(init).when(@unit.sensor(@flag)!=u.fx)
 	}
 	uctrl(flag,u.fx)
-	jump(bind.end)
 }
 
-::非安全型ubind, 入口偏移+2
+::ubind1, 入口偏移+2, 函数体长11 (unsafe, ubinds组件)
 ::绑定一个单位, 类型u.type, 标记u.fx, 保存到u; 跳转到bind.end
-function void ubind_us(u.type,u.fx,u){
+function void ubind1(u.type,u.fx,u){
 	::init
 	ubind(u.type)
 	u=@unit
 	ubind(u)
 
 	jump(init).when(@unit.sensor(@dead)!=0)
+
 	u.cer=@unit.sensor(@controller)
-	if(u.cer!=@unit){
-		jump(init).when(u.cer!=@this)
-		jump(init).when(@unit.sensor(@flag)!=u.fx)
-	}
-	uctrl(flag,u.fx)
+	jump(bind.flag).when(u.cer==@unit)
+	jump(init).when(u.cer!=@this)
+
+	u.f=@unit.sensor(@flag)
+	jump(init).when(u.f!=u.fx)
 	jump(bind.end)
 }
 
-::绑定多个单位ubinds
-::绑定u.max个单位(上限u.lim个), 类型u.type, 标记u.f0~u.f0+(n-1), 保存到u1~un; 跳转到bind.end
+::绑定多个单位ubinds (全局bind.flag, bind.end)
+::绑定u.max个单位(上限u.lim个), 类型u.type, 标记u.f0~u.f0+(n-1), 保存到u1~un
 function void ubinds(u.type,u.f0,u.max,u.lim){
 	u.fx=u.f0+u.now
-	u.now=u.now%u.max
-	jump2(+(u.now*12+2))
-	repeat(u,u.lim){
-		ubind_us(u.type,u.fx,u)
-	}
-	::bind.end
 	u.now=(u.now+1)%u.max
+	jump2(+(u.now*11+2))
+	repeat(u,u.lim){
+		ubind1(u.type,u.fx,u)
+	}
+	tag(bind.flag)
+	uctrl(flag,u.fx)
+	tag(bind.end)
 }
 
 ::根据地图大小生成flag
-function flag mapBasedFlag(map.size,flag.bit){
-	map.bit=ceil(lg(map.size))
-	x.bit=10.^(map.bit+flag.bit)
-	flag=@thisx*x.bit+@thisy*u.bit
+function flag mapBasedFlag(flag.bit){
+	map.bit=ceil(lg(@maph))
+	flag=(@thisx*(10.^map.bit)+@thisy)*10.^flag.bit
+}
+
+::简单随机flag
+function flag simpleFlag(flag.bit){
+	flag=floor(rand(10.^flag.bit))
 }
 
 ::寻找核心, 保存到c
@@ -97,4 +100,5 @@ function void mine(item,s){
 	}
 	uctrl(approach,c.x,c.y,6)
 	uctrl(itemDrop,c,u.capa)
+	uctrl(mine,null,null)
 }

@@ -4,7 +4,7 @@ import java.util.stream.IntStream;
 
 public class CodeCompiler {
     static void main() {
-        IO.println(convertCtrl(stdIOStream.from("tag(666)")).toPlainString());
+        IO.println(convertCodeLine(stdIOStream.of("s=min(2+3,5)")).toStringArray());
     }
 
     /**
@@ -14,7 +14,7 @@ public class CodeCompiler {
      */
     public static stdIOStream compile(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
-        Map<String, stdIOStream> funcMap = new HashMap<>();
+        Map<Integer, stdFuncStream> funcMap = new HashMap<>();
 
         codeBlock = insertImport(codeBlock);
 
@@ -24,33 +24,17 @@ public class CodeCompiler {
             funcMap = generateFuncMap(funcBlock);
             codeBlock = codeBlock.substring(0, funcStartIndex);
         }
-
-        //todo:清理代码 (暂定3回, 适用大多数情形)
         String codeCache = "";
-        codeBlock = unfoldRepeat(codeBlock);
-        for (int i = 0; i < 3; i++) {
+        while (!codeBlock.equals(codeCache)) {
             while (!codeBlock.equals(codeCache)) {
                 codeCache = codeBlock;
                 codeBlock = insertFunc(codeBlock, funcMap);
             }
+            codeCache = codeBlock;
             codeBlock = unfoldRepeat(codeBlock);
         }
 
-        int refNumMax = 1;
-        for (String line : codeBlock.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                stdIOStream convertedLine = convertCodeLine(stdIOStream.from(line.trim()));
-                refNumMax = Math.max(refNumMax, convertedLine.stat());
-                bashList.addAll(convertedLine.toStringArray());
-            }
-        }
-        bashList.add(0, "::HEAD");
-        bashList.add("::END");
-        if (!bashList.contains("::DEFAULT"))
-            bashList.add(1, "::DEFAULT");
-
-        stdIOStream result_set = convertSet(stdIOStream.from(bashList, refNumMax));
-        if (Main.isGeneratePrimeCode) {
+        if (Main.primeCodeLevel == 1) {
             String filePath = Main.filePath;
             if (filePath.endsWith(".mdtc") && !filePath.endsWith("_prime.mdtc")) {
                 String primeCodePath = filePath.replace(".mdtc", "_prime.mdtc");
@@ -61,6 +45,16 @@ public class CodeCompiler {
             } else IO.println("Skip writing prime code.");
         }
 
+        int refNumMax = 1;
+        for (String line : codeBlock.split("\n")) {
+            if (!line.trim().isEmpty()) {
+                stdIOStream convertedLine = convertCodeLine(stdIOStream.of(line.trim()));
+                refNumMax = Math.max(refNumMax, convertedLine.stat());
+                bashList.addAll(convertedLine.toStringArray());
+            }
+        }
+
+        stdIOStream result_set = convertSet(stdIOStream.of(bashList, refNumMax));
         stdIOStream result_jump = convertJump(result_set);
         return convertLink(result_jump);
     }
@@ -70,7 +64,7 @@ public class CodeCompiler {
         List<String> importLines = bashList.stream()
                 .filter(line -> line.startsWith("import ")).toList();
         bashList.removeIf(line -> line.startsWith("import "));
-        StringBuilder codeBlockBuilder = new StringBuilder(codeBlock);
+        StringBuilder codeBlockBuilder = new StringBuilder(Utils.listToCodeBlock(bashList));
         for (var line : importLines) {
             String importPath = line.substring(6).trim();
             if (!importPath.endsWith("mdtc")) importPath += ".libmdtc";
@@ -98,12 +92,14 @@ public class CodeCompiler {
             int midNum = 1;
         };
         final String keyStart = "repeat(", keyEnd = "}";
-        final String[] keysJump = {"do{", "for(", "if("};
+        final String[] keysJump = {"do{", "for(", "if(", "else{"};
+
         ArrayList<String> bashList = new ArrayList<>(List.of(codeBlock.split("\n")));
         ArrayList<String> bashCache = new ArrayList<>();
         bashList.replaceAll(String::trim);
-        ArrayList<String> preserveTags;
+
         String preserveVar = "";
+
         int matchIndex = 0, repeatRoutes = 0;
         int repeatStart = 0;
         boolean entryFound = false;
@@ -113,26 +109,21 @@ public class CodeCompiler {
                 matchIndex--;
                 if (!entryFound) continue;
                 if (matchIndex == 0) {
-                    preserveTags = new ArrayList<>(bashCache.stream().
-                            filter(line -> line.startsWith("::")).toList());
-                    preserveTags.replaceAll(s -> s.substring(2));
-
-                    ArrayList<String> tagsList = preserveTags;
-                    var varList = new ArrayList<>(List.of(new String[]{preserveVar}));
-                    bashCache.replaceAll(s -> Utils.replaceReserve(s, varList, tagsList));
+                    List<String> tagsList = new ArrayList<>(bashCache.stream().
+                            filter(line -> line.startsWith("::"))
+                            .map(s -> s.substring(2)).toList());
 
                     ArrayList<String> bashTo, bashToAdd = new ArrayList<>();
-                    String finalPreserveVar = preserveVar;
-                    for (int j = 0; j < repeatRoutes; j++) {
-                        bashTo = new ArrayList<>(bashCache);
-                        int finalJ = j;
+                    String finalVar = preserveVar;
+                    for (int j = 1; j <= repeatRoutes; j++) {
+                        String prefix = "REPEAT." + ref.midNum + "_";
+                        String replaceToVar = preserveVar + j;
 
-                        bashTo.replaceAll(s -> s.replace("ARG.0", finalPreserveVar + finalJ));
-                        bashTo.replaceAll(s -> s.replace("(PRESERVE_TAG.", "(REPEAT." + ref.midNum + "_PRESERVE_TAG."));
-                        bashTo.replaceAll(s -> s.replace("::PRESERVE_TAG.", "::REPEAT." + ref.midNum + "_PRESERVE_TAG."));
-                        bashTo.replaceAll(s -> s.replace("(FUNC.", "(REPEAT." + ref.midNum + "_FUNC."));
-                        bashTo.replaceAll(s -> s.replace("::FUNC.", "::REPEAT." + ref.midNum + "_FUNC."));
+                        bashTo = new ArrayList<>(bashCache);
+                        bashTo.replaceAll(s -> Utils.replaceTags(s, tagsList, prefix));
+                        bashTo.replaceAll(s -> Utils.replaceVar(s, finalVar, replaceToVar));
                         bashToAdd.addAll(bashTo);
+                        ref.midNum++;
                     }
                     for (int j = -2; j < bashCache.size(); j++) bashList.remove(repeatStart);
                     bashList.addAll(repeatStart, bashToAdd);
@@ -146,7 +137,8 @@ public class CodeCompiler {
             if (matchIndex > 0 && entryFound) bashCache.add(bash);
 
             if (bash.startsWith(keyStart)) {
-                String bracketContent = bash.substring(7, bash.lastIndexOf(")"));
+                int start = bash.indexOf("("), end = Utils.getEndBracket(bash, start);
+                String bracketContent = bash.substring(start + 1, end);
                 String[] repeatInfos = bracketContent.split(",");
                 if (repeatInfos.length == 0) {
                     Utils.printError("Error: repeat() not enough infos");
@@ -169,7 +161,7 @@ public class CodeCompiler {
                 }
             }
         }
-        return stdIOStream.from(bashList).toString();
+        return stdIOStream.of(bashList).toString().trim();
     }
 
     /**
@@ -177,37 +169,50 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static String insertFunc(String codeBlock, Map<String, stdIOStream> funcMap) {
+    private static String insertFunc(String codeBlock, Map<Integer, stdFuncStream> funcMap) {
         var ref = new Object() {
             int midNum = 1;
         };
         ArrayList<String> bashList = new ArrayList<>(List.of(codeBlock.split("\n")));
         ArrayList<String> bashCache = new ArrayList<>();
+
         for (String bash : bashList) {
             for (var func : funcMap.entrySet()) {
-                var funcKey = func.getKey();
-                while (bash.contains(funcKey)) {
-                    ArrayList<String> funcBody = new ArrayList<>(func.getValue().bash());
-                    boolean funcStat = !func.getValue().expr().startsWith("void");
-                    int start = bash.indexOf(funcKey);
-                    int end = Utils.getEndBracket(bash, start);
-                    ArrayList<String> varsName = new ArrayList<>(List.of(bash.substring(start + funcKey.length(), end).split(",")));
-                    String returnName = funcStat ? "FUNC." + ref.midNum : "FUNC.void";
-                    varsName.addFirst(returnName);
-                    for (int j = 0; j < varsName.size(); j++) {
-                        int finalJ = j;
-                        funcBody.replaceAll(s -> s.replace("ARG." + finalJ, varsName.get(finalJ)));
+                stdFuncStream funcStream = func.getValue();
+                String funcName = funcStream.name();
+                List<String> varsList = funcStream.varsList();
+                int varsNum = funcStream.vars();
+
+                int ignoreIndex = 0;
+                while (bash.contains(funcName)) {
+                    int start = bash.indexOf(funcName, ignoreIndex), end = Utils.getEndBracket(bash, start);
+                    if (end == -1) break;
+                    String funcArgs = bash.substring(start + funcName.length(), end);
+                    String[] args2Array = funcArgs.split(",");
+                    if (args2Array.length != varsNum - 1) {
+                        ignoreIndex = end;
+                        continue;
                     }
-                    funcBody.replaceAll(s -> s.replace("(PRESERVE_TAG.", "(FUNC." + ref.midNum + "_PRESERVE_TAG."));
-                    funcBody.replaceAll(s -> s.replace("::PRESERVE_TAG.", "::FUNC." + ref.midNum + "_PRESERVE_TAG."));
-                    funcBody.replaceAll(s -> s.replace("ARG.0", "FUNC." + ref.midNum));
+
+                    ArrayList<String> funcBody = new ArrayList<>(funcStream.funcBody());
+                    String prefix = "FUNC." + ref.midNum + "_";
+                    List<String> tagsList = funcStream.tagsList();
+                    funcBody.replaceAll(s -> Utils.replaceTags(s, tagsList, prefix));
+
+                    String returnValue = varsList.getFirst(), return2Value;
+                    if (returnValue.equals("void")) return2Value = "";
+                    else return2Value = prefix + returnValue;
+                    List<String> vars2List = new ArrayList<>() {{
+                        add(return2Value);
+                        addAll(Arrays.asList(args2Array));
+                    }};
+                    funcBody.replaceAll(s -> Utils.replaceVars(s, varsList, vars2List));
+
                     bashCache.addAll(funcBody);
-                    bash = bash.substring(0, start) + returnName + bash.substring(end + 1);
+                    bash = bash.substring(0, start) + return2Value + bash.substring(end + 1);
                     ref.midNum++;
                 }
             }
-            bash = bash.replaceAll("FUNC.void", "");
-
             if (!bash.trim().isEmpty()) bashCache.add(bash);
         }
         return Utils.listToCodeBlock(bashCache);
@@ -224,7 +229,7 @@ public class CodeCompiler {
         if (Utils.isCtrlCode(codeLine)) return convertCtrl(stream);
         if (Utils.isDotCtrlCode(codeLine)) return convertDotCtrl(stream);
 
-        while (Utils.stringSplit(stream.expr()).length > 1) {
+        while (Utils.stringSplit(stream.expr()).size() > 1) {
             stream = convertDot(stream);
             stream = convertFront(stream);
             stream = convertMiddle(stream);
@@ -260,6 +265,20 @@ public class CodeCompiler {
             put("ubind(", s -> "ubind " + s);
             put("uctrl(", s -> "ucontrol " + Utils.padParams(s.replace(',', ' '), 6));
 
+            put("ushoot(", s -> {
+                final String defaultTarget = "@this", defaultShooting = "1";
+                String target, ctrlType, shooting;
+
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                shooting = paramsMap.getOrDefault("main", defaultShooting);
+                target = paramsMap.getOrDefault("target", defaultTarget);
+                ctrlType = target.contains(",") ? "target" : "targetp";
+
+                target = target.replace(',', ' ');
+                String shootArgs = Utils.padParams(target + " " + shooting, 5);
+                return "ucontrol " + ctrlType + " " + shootArgs;
+            });
+
             put("draw(", s -> "draw " + Utils.padParams(s.replace(',', ' '), 7));
 
             put("jump(", s -> {
@@ -270,9 +289,9 @@ public class CodeCompiler {
                 target = paramsMap.getOrDefault("main", defaultTarget);
 
                 s = paramsMap.getOrDefault("when", "");
-                String[] splitList = Utils.stringSplitPro(s);
-                if (splitList.length > 1) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                List<String> splitList = Utils.stringSplitPro(s);
+                if (splitList.size() > 1) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
                         String bashLast = bashCache.bash().getLast();
@@ -282,18 +301,20 @@ public class CodeCompiler {
                             condition = String.join(" ", "notEqual", bashCache.expr(), "0");
                         bashList.addAll(bashCache.bash());
                     }
-                } else condition = String.join(" ", "notEqual", s, "0");
+                } else if (splitList.size() == 1)
+                    condition = String.join(" ", "notEqual", s, "0");
+
                 return String.join(" ", "jump", target, condition);
             });
 
             put("jump2(", s -> {
-                String[] strSplit = Utils.stringSplit(s);
-                if (strSplit.length > 1) s = "@counter=@counter" + s;
+                List<String> strSplit = Utils.stringSplitPro(s);
+                if (strSplit.size() > 1) s = "@counter=@counter" + s;
                 else s = "@counter=" + s;
 
-                stdIOStream jump2stream = convertCodeLine(stdIOStream.from(s));
+                stdIOStream jump2stream = convertCodeLine(stdIOStream.of(s));
                 bashList.addAll(jump2stream.bash());
-                return jump2stream.expr();
+                return "";
             });
             put("printf(", s -> {
                 String[] parts = s.split(",");
@@ -306,27 +327,35 @@ public class CodeCompiler {
             put("tag(", s -> "::" + s);
         }};
 
-        final List<String> ignoreKeys = List.of(new String[]{"jump(", "jump2("});
+        final List<String> ignoreKeys = List.of("jump(", "jump2(", "draw(", "ushoot(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
-            if (expr.contains(entry.getKey())) {
+            while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length(), end).trim();
-                String[] splitList = Utils.stringSplitPro(s);
-                if (splitList.length > 1 && !ignoreKeys.contains(entry.getKey())) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
-                    if (!bashCache.bash().isEmpty()) {
-                        ref.midNum = bashCache.stat();
-                        bashList.addAll(bashCache.bash());
-                        String midVariable = "mid." + ref.midNum;
-                        expr = expr.replace(s, midVariable);
-                        s = midVariable;
-                    }
+                if (end == -1) {
+                    Utils.printError("Bracket unmatched of frontCode:\n> " + expr);
+                    return stream;
                 }
-                bashList.add(entry.getValue().apply(s));
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
+                List<String> splitList = Utils.stringSplitPro(s);
+                if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
+                    List<String> splitParts = Utils.bracketPartSplit(s);
+                    for (int i = 0; i < splitParts.size(); i++) {
+                        String part = splitParts.get(i);
+
+                        stdIOStream bashCache = convertCodeLine(stdIOStream.of(part, ref.midNum));
+                        bashList.addAll(bashCache.bash());
+                        splitParts.set(i, bashCache.expr());
+                        ref.midNum = bashCache.stat();
+                    }
+                    s = String.join(",", splitParts);
+
+                }
+                String result = entry.getValue().apply(s);
+                bashList.add(result);
+                expr = "";
             }
         }
-
-        return stdIOStream.from(bashList);
+        return stdIOStream.of(bashList);
     }
 
     /**
@@ -352,47 +381,35 @@ public class CodeCompiler {
             put("config(", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
             put("color(", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
             put("shoot(", s -> {
-                if (s.isEmpty()) return "control shoot " + ref.block + " 0 0 0 0";
-                String[] parts = s.split("\\.");
-                String target = "@this", ctrlType = "shootp", shooting = "1";
-                if (!s.startsWith(")")) shooting = s.substring(0, Math.max(1, s.indexOf(")")));
-                for (String part : parts) {
-                    if (!part.endsWith(")")) part = part + ")";
-                    String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+                final String defaultTarget = "@this", defaultShooting = "1";
+                String target, ctrlType, shooting;
 
-                    if (bracketContent.isEmpty()) continue;
-                    if (part.startsWith("target(")) {
-                        if (bracketContent.split(",").length > 1) ctrlType = "shoot";
-                        target = bracketContent.replaceAll(",\\s*", " ");
-                    }
-                }
-                return "control " + ctrlType + " " + ref.block + " " + Utils.padParams(target + " " + shooting, 4);
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                shooting = paramsMap.getOrDefault("main", defaultShooting);
+                target = paramsMap.getOrDefault("target", defaultTarget);
+                ctrlType = target.contains(",") ? "shoot" : "shootp";
+
+                target = target.replace(',', ' ');
+                String shootArgs = Utils.padParams(target + " " + shooting, 4);
+                return "control " + ctrlType + " " + ref.block + " " + shootArgs;
             });
 
             put("ulocate(", s -> {
-                if (s.isEmpty())
-                    return "ulocate building core 0 null " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
-                String[] parts = s.split("\\.");
-                String locateType, ore = "null", building = "core", enemy = "0";
-                if (!s.contains(")")) locateType = s;
-                else locateType = s.substring(0, s.indexOf(")"));
-                final String[] buildings = {"core", "storage", "generator", "turret", "factory", "repair", "battery", "reactor", "drill", "shield"};
-                for (var build : buildings)
-                    if (locateType.equals(build)) {
-                        locateType = "building";
-                        building = build;
-                    }
+                final String defaultType = "ore", defaultOre = "0", defaultBuilding = "core", defaultEnemy = "0";
+                String locateType, ore, building, enemy;
 
-                for (String part : parts) {
-                    if (!part.endsWith(")")) part = part + ")";
-                    String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                locateType = paramsMap.getOrDefault("main", defaultType);
+                ore = paramsMap.getOrDefault("ore", defaultOre);
+                building = paramsMap.getOrDefault("building", defaultBuilding);
+                enemy = paramsMap.getOrDefault("enemy", defaultEnemy);
 
-                    if (bracketContent.isEmpty()) continue;
-                    if (part.startsWith("ore(")) ore = bracketContent;
-                    else if (part.startsWith("building(")) building = bracketContent;
-                    else if (part.startsWith("enemy")) enemy = bracketContent;
+                final List<String> buildings = List.of("core", "storage", "generator", "turret", "factory", "repair", "battery", "reactor", "drill", "shield");
+                if (buildings.contains(locateType)) {
+                    building = locateType;
+                    locateType = "building";
                 }
-                return "ulocate " + locateType + " " + building + " " + enemy + " " + ore + " " + ref.block + ".x " + ref.block + ".y " + ref.block + ".f " + ref.block;
+                return String.join(" ", "ulocate", locateType, building, enemy, ore, ref.block + ".x", ref.block + ".y", ref.block + ".f", ref.block);
             });
 
             put("unpack(", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
@@ -407,25 +424,34 @@ public class CodeCompiler {
             });
         }};
 
-        final List<String> ignoreKeys = List.of(new String[]{"shoot(", "ulocate("});
+        final List<String> ignoreKeys = List.of("shoot(", "ulocate(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
-                String s = expr.substring(start + entry.getKey().length(), end).trim();
-                String[] splitList = Utils.stringSplit(s);
-                if (splitList.length > 1 && !ignoreKeys.contains(entry.getKey())) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
-                    if (!bashCache.bash().isEmpty()) {
-                        ref.midNum = bashCache.stat();
-                        bashList.addAll(bashCache.bash());
-                        String midVariable = "mid." + ref.midNum;
-                        expr = expr.replace(s, midVariable);
-                        s = midVariable;
-                        end = Utils.getEndDotCtrl(expr, start);
-                    }
+                if (end == -1) {
+                    Utils.printError("Bracket unmatched of frontCode:\n> " + expr);
+                    return stream;
                 }
-                String result = entry.getValue().apply(s.trim());
+                String s = expr.substring(start + entry.getKey().length(), end).trim();
+                List<String> splitList = Utils.stringSplitPro(s);
+                if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
+                    List<String> splitParts = Utils.bracketPartSplit(s);
+                    for (int i = 0; i < splitParts.size(); i++) {
+                        String part = splitParts.get(i);
+
+                        stdIOStream bashCache = convertCodeLine(stdIOStream.of(part, ref.midNum));
+                        bashList.addAll(bashCache.bash());
+                        splitParts.set(i, bashCache.expr());
+                        ref.midNum = bashCache.stat();
+                    }
+                    String reduceContent = String.join(",", splitParts);
+                    expr = expr.replace(s, reduceContent);
+                    end = Utils.getEndDotCtrl(expr, start);
+                    s = reduceContent;
+                }
+                String result = entry.getValue().apply(s);
                 bashList.add(result);
+
                 expr = expr.substring(0, start - 1) + expr.substring(end + 1);
             }
         }
@@ -455,16 +481,16 @@ public class CodeCompiler {
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey());
-                String[] strSplit = Utils.stringSplit(expr.substring(0, start - 1));
-                ref.block = strSplit[strSplit.length - 1];
+                List<String> splitList = Utils.stringSplitPro(expr.substring(0, start - 1));
+                ref.block = splitList.getLast();
 
                 int end = Utils.getEndBracket(expr, start);
 
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
-                String[] splitList = Utils.stringSplit(s);
+                splitList = Utils.stringSplitPro(s);
                 String midVariable;
-                if (splitList.length > 1) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
+                if (splitList.size() > 1) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
                         bashList.addAll(bashCache.bash());
@@ -549,25 +575,15 @@ public class CodeCompiler {
             put("team(", s -> "lookup team mid." + ref.midNum + " " + s);
             put("pack(", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(s.split(","), 4));
             put("uradar(", s -> {
-                if (s.equals("()")) return "uradar enemy any any distance 0 0 mid." + ref.midNum;
-                String[] parts = s.split("\\.");
-                String block = "0", target = "enemy any any", order = "1", sort = "distance";
-                for (String part : parts) {
-                    if (part.endsWith(")")) part = part.substring(0, part.lastIndexOf(")"));
-                    int bracketIndex = part.indexOf("(") + 1;
-                    if (bracketIndex >= part.length()) continue;
-                    if (part.startsWith("target(")) {
-                        target = part.replaceAll(",\\s*", " ");
-                    } else if (part.startsWith("order(")) {
-                        order = part;
-                    } else if (part.startsWith("sort(")) {
-                        sort = part;
-                    }
-                }
-                String[] targetParts = target.split(" ");
-                if (targetParts.length < 3) {
-                    target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
-                }
+                final String block = "0", defaultTarget = "enemy,any,any", defaultOrder = "1", defaultSort = "distance";
+                String target, order, sort;
+
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                target = paramsMap.getOrDefault("target", defaultTarget);
+                order = paramsMap.getOrDefault("order", defaultOrder);
+                sort = paramsMap.getOrDefault("sort", defaultSort);
+
+                target = Utils.padParams(target.split(","), 3, "any");
                 return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
             });
         }};
@@ -577,47 +593,47 @@ public class CodeCompiler {
             put("cos(", s -> "op cos mid." + ref.midNum + " " + s);
             put("tan(", s -> "op tan mid." + ref.midNum + " " + s);
             put("radar(", s -> {
-                if (s.isEmpty()) return "radar enemy any any distance 0 0 mid." + ref.midNum;
-                String[] parts = s.split("\\.");
-                String block = "@this", target = "enemy any any", order = "1", sort = "distance";
-                if (!s.startsWith(")")) block = s.substring(0, s.indexOf(")"));
-                for (String part : parts) {
-                    if (!part.endsWith(")")) part = part + ")";
-                    String bracketContent = part.substring(part.indexOf('(') + 1, part.indexOf(')'));
-                    if (bracketContent.isEmpty()) continue;
-                    if (part.startsWith("target(")) {
-                        target = bracketContent.replaceAll(",\\s*", " ");
-                    } else if (part.startsWith("order(")) {
-                        order = bracketContent;
-                    } else if (part.startsWith("sort(")) {
-                        sort = bracketContent;
-                    }
-                }
-                String[] targetParts = target.split(" ");
-                if (targetParts.length < 3) {
-                    target = String.join(" ", targetParts) + (targetParts.length == 2 ? " any" : " any any");
-                }
+                final String defaultBlock = "@this", defaultTarget = "enemy,any,any", defaultOrder = "1", defaultSort = "distance";
+                String block, target, order, sort;
+
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                block = paramsMap.getOrDefault("main", defaultBlock);
+                target = paramsMap.getOrDefault("target", defaultTarget);
+                order = paramsMap.getOrDefault("order", defaultOrder);
+                sort = paramsMap.getOrDefault("sort", defaultSort);
+
+                target = Utils.padParams(target.split(","), 3, "any");
                 return "radar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
             });
         }};
 
         String expr = stream.expr();
 
+        final List<String> ignoreKeys = List.of("radar(", "uradar(");
         for (Map<String, Function<String, String>> handlers : List.of(funcHandlers_high, funcHandlers_low)) {
             for (Map.Entry<String, Function<String, String>> entry : handlers.entrySet()) {
                 while (expr.contains(entry.getKey())) {
                     int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                    if (end == -1) {
+                        Utils.printError("Bracket unmatched of frontCode:\n> " + expr);
+                        return stream;
+                    }
                     String s = expr.substring(start + entry.getKey().length(), end).trim();
-                    String[] splitList = Utils.stringSplit(s);
-                    if (splitList.length > 1) {
-                        stdIOStream bashCache = convertCodeLine(stdIOStream.from(s, ref.midNum));
-                        if (!bashCache.bash().isEmpty()) {
-                            ref.midNum = bashCache.stat();
+                    List<String> splitList = Utils.stringSplitPro(s);
+                    if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
+                        List<String> splitParts = Utils.bracketPartSplit(s);
+                        for (int i = 0; i < splitParts.size(); i++) {
+                            String part = splitParts.get(i);
+
+                            stdIOStream bashCache = convertCodeLine(stdIOStream.of(part, ref.midNum));
                             bashList.addAll(bashCache.bash());
-                            expr = expr.replace(s, bashCache.expr());
-                            end = Utils.getEndDotCtrl(expr, start);
-                            s = bashCache.expr();
+                            splitParts.set(i, bashCache.expr());
+                            ref.midNum = bashCache.stat();
                         }
+                        String reduceContent = String.join(",", splitParts);
+                        expr = expr.replace(s, reduceContent);
+                        end = Utils.getEndDotCtrl(expr, start);
+                        s = reduceContent;
                     }
                     String result = entry.getValue().apply(s);
                     bashList.add(result);
@@ -655,7 +671,12 @@ public class CodeCompiler {
                 String op = operatorMap.get(token);
                 String midVar = "mid." + ref.midNum;
                 if (!op.equals("set")) {
-                    String result = "op " + op + " " + midVar + " " + stack.get(stack.size() - 2) + " " + stack.getLast();
+                    String arg1 = stack.get(stack.size() - 2), arg2 = stack.getLast();
+                    String result = String.join(" ", "op", op, midVar, arg1, arg2);
+                    if (op.equals("sub")) {
+                        if (arg1.equals("0") && Utils.isNumeric(arg2))
+                            result = "set " + midVar + " -" + arg2;
+                    }
                     bashList.add(result);
                     stack.removeLast();
                     stack.removeLast();
@@ -663,9 +684,8 @@ public class CodeCompiler {
                     ref.midNum++;
                 } else {
                     String result = "set " + stack.getFirst() + " " + stack.getLast();
-                    String bashLast;
                     if (!bashList.isEmpty()) {
-                        bashLast = bashList.getLast();
+                        String bashLast = bashList.getLast();
                         int ctrlOffset = offsetMap.getOrDefault(bashLast.split(" ")[0], -1);
                         if (ctrlOffset != -1 && bashLast.split(" ")[ctrlOffset].equals(stack.getLast())) {
                             result = bashLast.replaceFirst(stack.getLast(), stack.getFirst());
@@ -684,7 +704,7 @@ public class CodeCompiler {
         for (String item : stack) {
             expr.append(item);
         }
-        return new stdIOStream(bashList, expr.toString());
+        return new stdIOStream(bashList, expr.toString(), ref.midNum);
     }
 
     /**
@@ -695,9 +715,11 @@ public class CodeCompiler {
     private static stdIOStream convertSet(stdIOStream stream) {
         final Map<String, Integer> offsetMap = Utils.operatorOffsetMap;
         ArrayList<String> bashList = stream.bash();
-        if (bashList.isEmpty()) return stdIOStream.empty();
+        String expr = stream.expr();
+
+        if (bashList.isEmpty()) return stream;
         for (int i = 1; i < bashList.size(); i++) {
-            var bashLast = bashList.get(i);
+            String bashLast = bashList.get(i);
             if (bashLast.startsWith("set ")) {
                 String[] setInfos = bashLast.split(" ");
                 String var0 = setInfos[1], midVar = setInfos[2];
@@ -707,10 +729,11 @@ public class CodeCompiler {
                     bashList.set(i - 1, bashFormer.replaceFirst(midVar, var0));
                     bashList.remove(i);
                     i--;
+                    if (midVar.equals(expr)) expr = "";
                 }
             }
         }
-        return stdIOStream.from(bashList, stream.stat());
+        return stdIOStream.of(bashList, expr, stream.stat());
     }
 
     /**
@@ -742,65 +765,92 @@ public class CodeCompiler {
             }
             if (line2Index == -1) {
                 if (lineIndex != -1) {
-                    Utils.printError("Error: {} not match: No such operation.");
-                    return stdIOStream.empty();
+                    Utils.printError("Error: {} not match at line " + lineIndex);
+                    Utils.printError(lineIndex + " " + bashList.get(lineIndex));
+                    return stdIOStream.of();
                 } else break;
             }
 
             String line = bashList.get(lineIndex), line2 = bashList.get(line2Index);
             ArrayList<String> bashCache;
-            int line2Offset = 0;
-            if (line.startsWith("do{")) {
-                bashList.set(lineIndex, "::PRESERVE_TAG." + ref.tag);
-                line2 = line2.substring(line2.indexOf("while(") + 6, line2.lastIndexOf(")"));
+            String tagTo = "TAG." + ref.tag;
 
-                bashCache = convertCodeLine(stdIOStream.from(line2)).toStringArray();
-            } else {
-                String bracketContent = line.substring(line.indexOf("(") + 1, line.lastIndexOf(")"));
-                if (line.startsWith("for(")) {
-                    bashList.set(lineIndex, "::PRESERVE_TAG." + ref.tag);
+            if (line.startsWith("if(")) {
+                tagTo += "_endIf";
+                int start = line.indexOf("("), end = Utils.getEndBracket(line, start);
+                String bracketContent = line.substring(start + 1, end);
 
-                    String[] forParts = bracketContent.split(";");
-                    if (forParts.length != 3) {
-                        Utils.printError("Error: for() content not match");
-                        return stdIOStream.empty();
-                    }
-                    ArrayList<String> initStream = convertCodeLine(stdIOStream.from(forParts[0])).toStringArray();
-                    bashList.addAll(lineIndex, initStream);
-                    line2Offset += initStream.size();
+                String jumpString = "jump(" + tagTo + ").when(" + bracketContent + ")";
+                ArrayList<String> initStream = convertCtrl(stdIOStream.of(jumpString)).bash();
+                jumpString = Utils.reverseCondition(initStream.getLast());
+                initStream.set(initStream.size() - 1, jumpString);
 
-                    stdIOStream operateStream = convertCodeLine(stdIOStream.from(forParts[2]));
-                    stdIOStream conditionStream = convertCodeLine(stdIOStream.from(forParts[1]));
-                    bashCache = operateStream.toStringArray();
-                    bashCache.addAll(conditionStream.toStringArray());
+                bashList.set(line2Index, "::" + tagTo);
+                bashList.remove(lineIndex);
+                bashList.addAll(lineIndex, initStream);
+                ref.tag++;
+            } else if (line.startsWith("else{")) {
+                tagTo += "_endElse";
 
-                } else { //must be if()
-                    ArrayList<String> initStream = convertCodeLine(stdIOStream.from(bracketContent)).bash();
-                    String[] conditionParts = initStream.getLast().split(" ", 4);
-                    Map<String, String> reverseMap = Utils.operatorReverseMap;
-
-                    String condition = reverseMap.get(conditionParts[1]) + " " + conditionParts[3];
-                    initStream.removeLast();
-                    initStream.add("jump PRESERVE_TAG." + ref.tag + " " + condition);
-                    bashList.remove(lineIndex);
-                    bashList.addAll(lineIndex, initStream);
-
-                    line2Offset += initStream.size();
-                    bashList.set(line2Index + line2Offset - 1, "::PRESERVE_TAG." + ref.tag);
-                    ref.tag++;
-                    continue;
+                String endIfLine = bashList.get(lineIndex - 1);
+                if (!endIfLine.startsWith("::") || !endIfLine.endsWith("_endIf")) {
+                    Utils.printError("Error: else not match at line " + lineIndex);
+                    return stdIOStream.of();
                 }
-            }
-            String[] conditionParts = bashCache.getLast().split(" ", 4);
-            String condition = conditionParts[1] + " " + conditionParts[3];
-            bashCache.removeLast();
-            bashCache.add("jump PRESERVE_TAG." + ref.tag + " " + condition);
+                String jumpString = "jump " + tagTo + " always 0 0";
 
-            bashList.remove(line2Index + line2Offset);
-            bashList.addAll(line2Index + line2Offset, bashCache);
-            ref.tag++;
+                bashList.set(line2Index, "::" + tagTo);
+                bashList.remove(lineIndex);
+                bashList.add(lineIndex - 1, jumpString);
+                ref.tag++;
+            } else if (line.startsWith("do{")) {
+                tagTo += "_do";
+                int start = line2.indexOf("("), end = Utils.getEndBracket(line2, start);
+                String bracketContent = line2.substring(start + 1, end);
+
+                String jumpString = "jump(" + tagTo + ").when(" + bracketContent + ")";
+                bashCache = convertCtrl(stdIOStream.of(jumpString)).bash();
+
+                bashList.remove(line2Index);
+                bashList.addAll(line2Index, bashCache);
+                bashList.set(lineIndex, "::" + tagTo);
+                ref.tag++;
+            } else if (line.startsWith("for(")) {
+                String tagEnd = tagTo + "_endFor";
+                tagTo += "_for";
+                int start = line.indexOf("("), end = Utils.getEndBracket(line, start);
+                String bracketContent = line.substring(start + 1, end);
+                bashList.set(lineIndex, "::TAG." + ref.tag);
+
+                String[] forParts = bracketContent.split(";");
+                if (forParts.length != 3) {
+                    Utils.printError("Error: for() content not match");
+                    return stdIOStream.of();
+                }
+                ArrayList<String> initStream = convertCodeLine(stdIOStream.of(forParts[0])).bash();
+
+                String jumpString = "jump(" + tagEnd + ").when(" + forParts[1] + ")";
+
+                ArrayList<String> conditionStream = convertCtrl(stdIOStream.of(jumpString)).bash();
+                jumpString = Utils.reverseCondition(conditionStream.getLast());
+                conditionStream.set(conditionStream.size() - 1, jumpString);
+                conditionStream.addFirst("::" + tagTo);
+
+                ArrayList<String> operateStream = convertCodeLine(stdIOStream.of(forParts[2])).bash();
+                operateStream.add("jump " + tagTo + " always 0 0");
+                operateStream.add("::" + tagEnd);
+
+                bashList.remove(line2Index);
+                bashList.addAll(line2Index, operateStream);
+                bashList.remove(lineIndex);
+                bashList.addAll(lineIndex, conditionStream);
+                bashList.addAll(lineIndex, initStream);
+                ref.tag++;
+            } else {
+                Utils.printError("Undefined loop type of " + line);
+            }
         }
-        return stdIOStream.from(bashList);
+        return stdIOStream.of(bashList);
     }
 
     /**
@@ -812,20 +862,39 @@ public class CodeCompiler {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
+        if (bashList.size() > 1)
+            bashList.add(bashList.size() - 1, "::END");
+        if (bashList.getLast().startsWith("::"))
+            bashList.add("end");
+        if (!bashList.contains("::DEFAULT"))
+            bashList.addFirst("::DEFAULT");
+        bashList.addFirst("::HEAD");
+
+        if (Main.primeCodeLevel == 2) {
+            String filePath = Main.filePath;
+            if (filePath.endsWith(".mdtc") && !filePath.endsWith("_prime.mdtc")) {
+                String primeCodePath = filePath.replace(".mdtc", "_prime.mdtc");
+                String writeContent = Utils.listToCodeBlock(bashList);
+                Utils.writeFile(primeCodePath, writeContent);
+
+                IO.println("PrimeCode output at:\n> " + primeCodePath);
+            } else IO.println("Skip writing prime code.");
+        }
+
         int tagNum;
         for (int i = 0; i < bashList.size(); i++) {
             String line = bashList.get(i);
             tagNum = 0;
             if (line.startsWith("jump ")) {
-                String[] parts = line.split(" ");
+                String[] parts = line.split(" ", 3);
                 if (parts.length > 1) {
-                    String arg = parts[1].trim();
+                    String target = parts[1].trim();
                     int index = -1;
                     for (int j = 0; j < bashList.size(); j++) {
                         String codeLine = bashList.get(j);
                         if (bashList.get(j).startsWith("::")) {
                             String tag = codeLine.substring(2).trim();
-                            if (tag.equals(arg)) {
+                            if (tag.equals(target)) {
                                 index = j - tagNum;
                                 break;
                             }
@@ -833,24 +902,12 @@ public class CodeCompiler {
                         }
                     }
                     if (index >= 0) {
-                        String jumpString = "jump " + index + " " + String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
-                        if (jumpString.endsWith("null null null")) {
-                            ArrayList<String> bashCache = new ArrayList<>(bashList);
-                            bashCache.removeIf(s -> s.startsWith("::"));
-                            IO.println(stdIOStream.from(bashCache).toString());
-                            Utils.printError("Error at jump cast: line " + i);
-                            Utils.printError(i + " " + line);
-                            return stream;
-                        }
+                        String jumpString = String.join(" ", "jump", index + "", parts[2]);
                         bashList.set(i, jumpString);
                     } else {
-                        ArrayList<String> bashCache = new ArrayList<>(bashList);
-                        bashCache.removeIf(s -> s.startsWith("::"));
-                        IO.println(stdIOStream.from(bashCache).toString());
-                        Utils.printError("MdtC Compile Error: Jump() tag not found of [" + arg + "]");
-                        Utils.printError(i + " " + line);
-
-                        bashList.set(i, "jump 0 always 0 0");
+                        Utils.printError("Compile Error: jump() tag not found of [" + target + "]");
+                        Utils.printError(i + 1 + " " + line);
+                        return stream;
                     }
                 }
             }
@@ -862,51 +919,59 @@ public class CodeCompiler {
 
     /**
      * 将函数块分离到函数,暂存于funcMap
-     * {@code funcMap}结构: key:函数名, bash:函数体, expr:返回量, stat:标签数
+     * {@code funcMap}结构: key:Hash(函数名,参数量), funcStream:函数体
+     *
+     * @return {@code stdFuncStream}
      */
-    static HashMap<String, stdIOStream> generateFuncMap(String funcBlock) {
+    static HashMap<Integer, stdFuncStream> generateFuncMap(String funcBlock) {
         final String keyStart = "function", keyEnd = "}";
-        final String[] keysJump = {"do{", "for(", "if("};
-        HashMap<String, stdIOStream> funcMap = new HashMap<>();
+        final String[] keysJump = {"do{", "for(", "if(", "else{"};
+        HashMap<Integer, stdFuncStream> funcMap = new HashMap<>();
+
         ArrayList<String> bashList = new ArrayList<>(List.of(funcBlock.split("\n")));
         ArrayList<String> bashCache = new ArrayList<>();
+
         int matchIndex = 0;
-        String funcName = "", returnValue = "";
-        String funcArgs = "";
-        ArrayList<String> preserveVars, preserveTags;
+        String funcName = "";
+        List<String> varsList = List.of(), tagsList;
+
         for (String bash : bashList) {
             if (bash.startsWith(keyEnd)) {
                 matchIndex--;
                 if (matchIndex == 0) {
-                    String ioVariables = returnValue + " " + funcArgs;
-                    preserveVars = new ArrayList<>(List.of(ioVariables.split(" ")));
-                    preserveTags = new ArrayList<>(bashCache.stream().
-                            filter(line -> line.trim().startsWith("::")).toList());
-                    preserveTags.replaceAll(s -> s.trim().substring(2));
+                    tagsList = bashCache.stream()
+                            .filter(s -> s.startsWith("::"))
+                            .map(s -> s.substring(2))
+                            .toList();
 
-                    ArrayList<String> tagsList = preserveTags, varsList = preserveVars;
-                    bashCache.replaceAll(s -> Utils.replaceReserve(s, varsList, tagsList));
-
-                    stdIOStream funcStream = stdIOStream.from(bashCache, returnValue, preserveTags.size());
-                    funcMap.putIfAbsent(funcName, funcStream);
+                    stdFuncStream funcStream = stdFuncStream.of(funcName, bashCache, varsList, tagsList);
+                    int funcHash = Objects.hash(funcName, funcStream.varsNum());
+                    funcMap.put(funcHash, funcStream);
                     bashCache = new ArrayList<>();
                 }
             }
 
-            if (matchIndex > 0) bashCache.add(bash);
+            if (matchIndex > 0) bashCache.add(bash.trim());
 
             if (bash.startsWith(keyStart)) {
-                String[] functionHead = bash.split(" ");
-                if (functionHead.length < 3) {
+                String[] funcSplit = bash.split(" ");
+                if (funcSplit.length < 3) {
                     Utils.printError("Bad definition of function <anonymous>");
                     return funcMap;
                 }
-                returnValue = functionHead[1];
-                int argsStart = functionHead[2].indexOf("(");
-                funcName = functionHead[2].substring(0, argsStart + 1);
-                funcArgs = functionHead[2]
-                        .substring(argsStart + 1, Utils.getEndBracket(functionHead[2], argsStart))
-                        .replace(',', ' ');
+                String returnValue = funcSplit[1], funcHead = funcSplit[2];
+                int argsStart = funcHead.indexOf("("), argsEnd = Utils.getEndBracket(funcHead, argsStart);
+                funcName = funcHead.substring(0, argsStart + 1);
+                if (argsEnd == -1) {
+                    Utils.printError("Bad definition of function " + funcHead);
+                }
+                String[] funcArgs = funcHead.substring(argsStart + 1, argsEnd).split(",");
+
+                varsList = new ArrayList<>() {{
+                    add(returnValue);
+                    addAll(Arrays.asList(funcArgs));
+                }};
+
                 matchIndex++;
             }
             for (var key : keysJump) {

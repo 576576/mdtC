@@ -6,7 +6,9 @@ wait(6)
 stop()
 end()
 ubind(@mono)
-uctrl(shoot,114,514)
+uctrl(payDrop)
+ushoot(1).target(114,514)
+ushoot(i).target(ene1)
 
 ::点控制(无副作用)
 b1.enable(false).config(null).color(0)
@@ -19,5 +21,3 @@ result.write(cell1,x1)
 
 ::拓展
 printf("666{0}yf{1}",6,cr1)
-
-::pass

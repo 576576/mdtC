@@ -23,7 +23,7 @@ public class CodeDecompiler {
             }
         }
 
-        var result_ctrl_free = convertCtrl(stdIOStream.from(bashList));
+        var result_ctrl_free = convertCtrl(stdIOStream.of(bashList));
 
         return result_ctrl_free;
     }
@@ -56,7 +56,7 @@ public class CodeDecompiler {
             }
         }
 
-        return stdIOStream.from(bashList);
+        return stdIOStream.of(bashList);
     }
 
     /**

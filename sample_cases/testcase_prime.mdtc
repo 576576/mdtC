@@ -1,0 +1,7 @@
+::HEAD
+::DEFAULT
+::Test cases
+set flag2 1
+::END
+::简单随机flag
+end

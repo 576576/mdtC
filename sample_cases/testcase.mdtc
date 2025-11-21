@@ -1,4 +1,7 @@
 ::Test cases
-u=uu-1
-::FUNC#2_PRESERVE_TAG#1
-jump(FUNC#2_PRESERVE_TAG#1).when(u.cer==@unit)
+flag2=simpleFlag(5)
+
+::简单随机flag
+function flag simpleFlag(flag.bit){
+	flag=1
+}

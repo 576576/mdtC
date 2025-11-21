@@ -1,42 +1,32 @@
-::跳转jump
-::例:钍堆防爆
-t=link(e)
-case= t.sensor(@heat)<0.01 && t.sensor(@thorium)>27
-t.enable(case)
+::原生跳转jump
 e=e+1
-jump(例:钍堆防爆).when(e<@links)
-e=0
-
-
-::拓展
-::跳转jump2(@counter)
-::[red]警告:jump2容易造成未定义行为
-jump2(+4)
-jump2(+max(t,5).^3-625)
-jump2(6)
+jump(原生跳转jump).when(e<6)
 
 ::分支if
-::例：初始化
 if(init==0){
 	mid=rand(100000)
 	u.flag=floor(mid)
 	init=1
 }
+else{
+	end()
+}
 
 ::循环for
+::例:钍堆防爆
 for(e=0;e<@links;e=e+1){
 	t=link(e)
-	case=(t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
+	case= t.sensor(@heat)<0.01 && t.sensor(@thorium)>27
 	t.enable(case)
 }
 
 ::循环do-while
-e=0
 do{
-	t=link(e)
-	case=(t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
-	t.enable(case)
-	e=e+1
-}while(e<@links)
+	e=e-1
+}while(e.^3>(-114514))
 
-::pass
+::跳转jump2
+::警告:jump2的未定义行为不会报错,必须手动检查标签
+jump2(+4)
+jump2(+min(19198,1).^0)
+jump2(0)

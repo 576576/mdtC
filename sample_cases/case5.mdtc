@@ -41,5 +41,3 @@ function void onebind(u,u.type,u.fx){
 	uctrl(flag,u.fx)
 	jump2(bind.end)
 }
-
-::pass

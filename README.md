@@ -13,6 +13,7 @@ Version: `1.1`
 - `-i, --file <文件路径>`: 指定文件路径
 - `-o, --output <输出路径>`: 指定输出路径
 - `-oo, --open-out`: 编译后打开输出
+- `-gpc, --generate-prime-code <代码等级>`: 产生中间代码(硬链接前), 1接近ts, 2接近汇编
 
 ### *查看这些示例快速开始*
 - [钍堆防爆](sample_cases/failsafe_钍堆.mdtc)
@@ -48,16 +49,16 @@ x0="Hello World"
 ### 2. 计算
 ```githubexpressionlanguage
 ::一般
-q=1+1
-x=1+2-3*4/5//6%7%%8.^9
-y=1==2!=3&&4<5<=6>7>=8===9
-z=1<<2>>3>>>4|5&6^7
-i=max(1,2)+min(3,4)+angle(5,6)+angleDiff(7,8)
-j=len(1,2)+noise(3,4)+log(5,6)
-k=not(1)*abs(2)*sign(3)*ln(4)*lg(5)*floor(6.7)*ceil(8.9)
+x=1+(-1)
+y=1+2-3*4/5//6%7%%8.^9
+z=1==2!=3&&4<5<=6>7>=8===9
 
-::混合
-res=re-1+isd2*abs(c)^(min(3,x3)+8)*yy5
+i=1<<2>>3>>>4|5&6^7
+j=max(1,2)+min(3,4)*angle(5,6)>angleDiff(7,8)
+k=len(1,2)+noise(3,4).^log(5,6)
+
+m=not(abs(sign(ln(lg(lb(floor(ceil(7.8))))))))
+n=round(sqrt(rand(sin(cos(tan(asin(acos(atan(9)))))))))
 ```
 输出: [`case1.mdtcode`](./sample_cases/case1.mdtcode)
 
@@ -72,6 +73,10 @@ wait(6)
 ubind(@mono)
 stop()
 end()
+ubind(@mono)
+uctrl(payDrop)
+ushoot(1).target(114,514)
+ushoot(i).target(ene1)
 
 ::点控制(无副作用)
 b1.enable(false).config(null).color(0)
@@ -92,57 +97,50 @@ printf("666{0}yf{1}",6,cr1)
 ### 4. 控制(有副作用)
 ```githubexpressionlanguage
 ::控制(有副作用)
-s=link(i)
-g=block(2)*unit(3)*item(4)*liquid(5)*team(6)*pack(r,g,b,a)
-m=uradar()==radar(t5).target(player,ground).order(0).sort(maxHealth)
+r=link(i)
+g=block(unit(item(liquid(team(LookupIndex)))))*pack(r,g,b,a)
+b=uradar()===radar(t5).target(player,ground).order(0).sort(maxHealth)
 
 ::点控制(有副作用)
-res=b1.sensor(@lead)+c1.read(bit2)
+x=b1.sensor(@lead)+c1.read(bit2)
 ```
 输出: [`case3.mdtcode`](./sample_cases/case3.mdtcode)
 
 
 ### 5. 跳转
 ```githubexpressionlanguage
-::例:钍堆防爆
-::func1
-t=link(e)
-case= (t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
-t.enable(case)
+::原生跳转jump
 e=e+1
-jump(func1).when(e<@links)
-e=0
-```
-```githubexpressionlanguage
-::拓展
-::跳转(@counter)
-jump2(+4)
-jump2(+max(t,5).^3-625)
-jump2(6)
+jump(原生跳转jump).when(e<6)
 
-::分支
-::例：初始化
+::分支if-else
 if(init==0){
-mid=rand(100000)
-u.flag=floor(mid)
-init=1
+	mid=rand(100000)
+	u.flag=floor(mid)
+	init=1
+}
+else{
+    end()
 }
 
-::for循环
+::循环for
+::例:钍堆防爆
 for(e=0;e<@links;e=e+1){
-t=link(e)
-case=(t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
-t.enable(case)
+	t=link(e)
+	case= t.sensor(@heat)<0.01 && t.sensor(@thorium)>27
+	t.enable(case)
 }
 
-::do-while循环
-e=0
+::循环do-while
 do{
-t=link(e)
-case=(t.sensor(@heat)<0.01)&&(t.sensor(@thorium)>27)
-t.enable(case)
-e=e+1
-}while(e<@links)
+	e=e-1
+}while(e.^3>(-114514))
+
+::跳转jump2
+::警告:jump2的未定义行为不会报错,必须手动检查标签
+jump2(+4)
+jump2(+min(19198,1).^0)
+jump2(0)
 ```
 输出: [`case4.mdtcode`](./sample_cases/case4.mdtcode)
 
@@ -207,23 +205,16 @@ function void onebind(u,u.type,u.fx){
 输出: [`case5.mdtcode`](./sample_cases/case5.mdtcode)
 
 
-### 8. 重复
-对代码段多次重复
+### 8. 重复和导入
+repeat对代码段多次重复
 等价的1D数组实现, 嵌套即可实现n维数组
 ```githubexpressionlanguage
-::repeat使用示例
-repeat(u,3){
-	u=link(e)
-	e=e+1
-}
-str=strln3("sayounara")
+::repeat和import使用示例
+import sample_cases/modules/example
 
-
-function str strln3(str_in){
-	str=str_in
-	repeat(3){
-		str=str+"\n"
-	}
+repeat(flag,3){
+	flag=simpleFlag(5)
 }
 ```
-输出: [`case6.mdtcode`](./sample_cases/case6.mdtcode)
+库文件: [`example.libmdtc`](./sample_cases/modules/example.libmdtc)  
+输出: [`case6.mdtcode`](./sample_cases/case6.mdtcode) 

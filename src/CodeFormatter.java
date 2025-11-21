@@ -4,14 +4,13 @@ public class CodeFormatter {
     }
 
     public static String format(String codeBlock) {
-        final String[] keysStart = {"do{", "for(", "if(","function ","repeat("};
+        final String[] keysStart = {"do{", "for(", "if(", "else{", "repeat(", "function "};
         final String[] keysEnd = {"}while(", "}"};
         final String[] lines = codeBlock.split("\n");
         int matchIndex = 0;
         StringBuilder sb = new StringBuilder();
         for (int i = 0, linesLength = lines.length; i < linesLength; i++) {
-            String line = lines[i];
-            line = line.trim();
+            String line = lines[i].trim();
             if (line.isEmpty()) {
                 sb.append("\n");
                 continue;
