@@ -3,8 +3,8 @@ import org.apache.commons.cli.*;
 import java.util.List;
 
 public class Main {
-    private static final String VERSION_TAG = "1.1";
-    public static boolean isOpenOutput, isToFormat, isFormatOnly;
+    private static final String VERSION_TAG = "1.2";
+    public static boolean isToFormat, isFormatOnly, isOpenOutput;
     public static String filePath = "", outPath = "";
     public static int primeCodeLevel = 0;
 

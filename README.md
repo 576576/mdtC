@@ -1,5 +1,5 @@
 # MdtC
-Version: `1.1`
+Version: `1.2`
 
 本转换器用于将类Java代码转为mindustry处理器代码.  
 输入: 由类java语言(aka.`mdtc`)编写,`.mdtc`后缀文件.  
@@ -22,7 +22,6 @@ Version: `1.1`
 
 ### TodoList
 - 完善代码检查/自动补全
-- 支持模块导入
 - 编写为游戏模组
 ---
 
