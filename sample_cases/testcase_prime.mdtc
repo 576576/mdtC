@@ -1,7 +1,6 @@
 ::HEAD
 ::DEFAULT
 ::Test cases
-set flag2 1
+getlink s 0
 ::END
-::简单随机flag
-end
+select s notEqual @links 0 s c

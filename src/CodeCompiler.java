@@ -376,11 +376,11 @@ public class CodeCompiler {
         };
 
         Map<String, Function<String, String>> funcHandlers = new HashMap<>() {{
-            put("ctrl(", s -> "control " + Utils.padParams(s.replace(',', ' '), 5));
-            put("enable(", s -> "control enabled " + ref.block + " " + Utils.padParams(s, 4));
-            put("config(", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
-            put("color(", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
-            put("shoot(", s -> {
+            put(".ctrl(", s -> "control " + Utils.padParams(s.replace(',', ' '), 5));
+            put(".enable(", s -> "control enabled " + ref.block + " " + Utils.padParams(s, 4));
+            put(".config(", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
+            put(".color(", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
+            put(".shoot(", s -> {
                 final String defaultTarget = "@this", defaultShooting = "1";
                 String target, ctrlType, shooting;
 
@@ -394,7 +394,7 @@ public class CodeCompiler {
                 return "control " + ctrlType + " " + ref.block + " " + shootArgs;
             });
 
-            put("ulocate(", s -> {
+            put(".ulocate(", s -> {
                 final String defaultType = "ore", defaultOre = "0", defaultBuilding = "core", defaultEnemy = "0";
                 String locateType, ore, building, enemy;
 
@@ -412,10 +412,10 @@ public class CodeCompiler {
                 return String.join(" ", "ulocate", locateType, building, enemy, ore, ref.block + ".x", ref.block + ".y", ref.block + ".f", ref.block);
             });
 
-            put("unpack(", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
-            put("pflush(", _ -> "printflush " + ref.block);
-            put("dflush(", _ -> "drawflush " + ref.block);
-            put("write(", s -> {
+            put(".unpack(", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
+            put(".pflush(", _ -> "printflush " + ref.block);
+            put(".dflush(", _ -> "drawflush " + ref.block);
+            put(".write(", s -> {
                 String[] parts = s.split(",");
                 String content = "null", bit = "0";
                 if (parts.length > 0) content = parts[0];
@@ -424,7 +424,7 @@ public class CodeCompiler {
             });
         }};
 
-        final List<String> ignoreKeys = List.of("shoot(", "ulocate(");
+        final List<String> ignoreKeys = List.of(".shoot(", ".ulocate(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
@@ -452,7 +452,7 @@ public class CodeCompiler {
                 String result = entry.getValue().apply(s);
                 bashList.add(result);
 
-                expr = expr.substring(0, start - 1) + expr.substring(end + 1);
+                expr = expr.substring(0, start) + expr.substring(end + 1);
             }
         }
         if (expr.equals(ref.block)) expr = "";
@@ -474,22 +474,47 @@ public class CodeCompiler {
             String block = "";
         };
         Map<String, Function<String, String>> funcHandlers = new HashMap<>() {{
-            put("sensor(", s -> "sensor mid." + ref.midNum + " " + ref.block + " " + s);
-            put("read(", s -> "read mid." + ref.midNum + " " + ref.block + " " + s);
+            put(".sensor(", s -> "sensor mid." + ref.midNum + " " + ref.block + " " + s);
+            put(".read(", s -> "read mid." + ref.midNum + " " + ref.block + " " + s);
+            put(".orElse(", s -> {
+                final String defaultTarget = "0", defaultCondition = "always 0 0";
+                String target, condition = defaultCondition;
+
+                Map<String, String> paramsMap = Utils.getChainParams(s);
+                target = paramsMap.getOrDefault("main", defaultTarget);
+
+                s = paramsMap.getOrDefault("when", "");
+                List<String> splitList = Utils.stringSplitPro(s);
+                if (splitList.size() > 1) {
+                    stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
+                    if (!bashCache.bash().isEmpty()) {
+                        ref.midNum = bashCache.stat();
+                        String bashLast = bashCache.bash().getLast();
+                        condition = Utils.getCondition(bashLast);
+                        if (!condition.equals(defaultCondition)) bashCache.bash().removeLast();
+                        else if (!bashCache.expr().isEmpty())
+                            condition = String.join(" ", "notEqual", bashCache.expr(), "0");
+                        bashList.addAll(bashCache.bash());
+                    }
+                } else if (splitList.size() == 1)
+                    condition = String.join(" ", "notEqual", s, "0");
+
+                condition = Utils.reverseCondition(condition);
+                return String.join(" ", "select", "mid." + ref.midNum, condition, ref.block, target);
+            });
         }};
 
+        final List<String> ignoreKeys = List.of(".orElse(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
-                int start = expr.indexOf(entry.getKey());
-                List<String> splitList = Utils.stringSplitPro(expr.substring(0, start - 1));
+                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                List<String> splitList = Utils.stringSplitPro(expr.substring(0, start));
                 ref.block = splitList.getLast();
-
-                int end = Utils.getEndBracket(expr, start);
 
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
                 splitList = Utils.stringSplitPro(s);
                 String midVariable;
-                if (splitList.size() > 1) {
+                if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
                     stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
@@ -501,7 +526,7 @@ public class CodeCompiler {
                 }
                 String result = entry.getValue().apply(s.trim());
                 bashList.add(result);
-                expr = expr.substring(0, start - ref.block.length() - 1) + "mid." + ref.midNum + expr.substring(end + 1);
+                expr = expr.substring(0, start - ref.block.length()) + "mid." + ref.midNum + expr.substring(end + 1);
                 ref.midNum++;
             }
         }

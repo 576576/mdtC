@@ -1,2 +1,2 @@
-set flag2 1
-end
+getlink s 0
+select s notEqual @links 0 s c

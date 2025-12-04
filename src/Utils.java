@@ -22,6 +22,7 @@ public class Utils {
         put("packcolor", 1);
         put("read", 1);
         put("set", 1);
+        put("select", 1);
     }};
     final static Map<String, String> operatorReverseMap = new HashMap<>() {{
         put("equal", "notEqual");
@@ -243,10 +244,6 @@ public class Utils {
             }
         }
         return tokens;
-    }
-
-    static String stringOf(String[] arr) {
-        return Arrays.stream(arr).reduce("", (a, b) -> a + b);
     }
 
     static String stringOf(List<String> list) {

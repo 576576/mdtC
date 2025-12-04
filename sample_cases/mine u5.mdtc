@@ -1,6 +1,7 @@
 ::混合代码
 ::例：mine u5
 ::初始设定: 3poly采沙
+
 if(init==0){
 	print("item:要采的矿 u.max:控制单位数 mine.ratio:采矿比")
 	item=@sand
@@ -20,17 +21,11 @@ if(init==0){
 	init=1
 	end()
 }
-
 ubind5(u.type,u.f0,u.max)
-
 getCore(c)
-if(@links!=0){
-	s=link(0)
-}
-else{
-	s=c
-}
+s=link(0)
 
+s=s.orElse(c).when(@links==0)
 mine(item,s)
 
 

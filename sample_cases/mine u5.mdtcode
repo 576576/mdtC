@@ -85,24 +85,22 @@ jump 85 always 0 0
 ucontrol flag u.fx 0 0 0 0
 sensor c.d c @dead
 jump 89 equal c.d 0
-ulocate building core 0 null c.x c.y c.f c
+ulocate building core 0 0 c.x c.y c.f c
 jump 87 equal c.f 0
-jump 92 equal @links 0
 getlink s 0
-jump 93 always 0 0
-set s c
+select s notEqual @links 0 s c
 sensor s.x s @x
 sensor s.y s @y
 sensor u.item @unit @firstItem
 sensor u.count @unit item
-jump 102 notEqual u.item item
-jump 103 lessThan u.count u.fill
+jump 100 notEqual u.item item
+jump 101 lessThan u.count u.fill
 ucontrol approach s.x s.y 6 0 0
 ucontrol itemDrop s u.capa 0 0 0
 end
-jump 110 notEqual u.item null
+jump 108 notEqual u.item null
 ulocate ore core 0 item m.x m.y m.f m
-jump 106 notEqual m.f 0
+jump 104 notEqual m.f 0
 end
 ucontrol boost 1 0 0 0 0
 ucontrol approach m.x m.y 5 0 0

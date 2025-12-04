@@ -1,7 +1,3 @@
 ::Test cases
-flag2=simpleFlag(5)
-
-::简单随机flag
-function flag simpleFlag(flag.bit){
-	flag=1
-}
+s=link(0)
+s=s.orElse(c).when(@links==0)
