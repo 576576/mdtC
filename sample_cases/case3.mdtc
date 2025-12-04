@@ -5,3 +5,4 @@ b=uradar()===radar(t5).target(player,ground).order(0).sort(maxHealth)
 
 ::点控制(有副作用)
 x=b1.sensor(@lead)+c1.read(bit2)
+y=a.orElse(b).when(x!=0).orElse(c).when(r)

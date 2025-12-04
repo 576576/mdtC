@@ -27,55 +27,49 @@ Version: `1.2`
 
 ## 功能
 
-### 0.注释和标签
+### 0.注释与标签
 ```githubexpressionlanguage
 ::这是注释,也是标签
 tag(这也是标签,而且是全局标签)
-::jump必须绑定标签,eg:
-::jump(这是注释,也是标签)
-::没有指定标签的jump会跳到DEFAULT
+
 ::代码头尾自带HEAD和END标签
+::缺省时代码头自带DEFAULT标签
 ```
+输出: [`case0.mdtcode`](./sample_cases/case0.mdtcode)
 
-### 1. 赋值
+
+### 1. 赋值与计算
 ```githubexpressionlanguage
+::赋值
 x0="Hello World"
-```
 
-输出: `set x0 "Hello World"`
+::计算
+x=1+(-1)-(-x0)*4/5//6%7%%8.^9
+y=1==(2!=3)&&4<5<=6>7>=8===9
+z=1<<2>>3>>>4|5&6^7
 
-
-### 2. 计算
-```githubexpressionlanguage
-::一般
-x=1+(-1)
-y=1+2-3*4/5//6%7%%8.^9
-z=1==2!=3&&4<5<=6>7>=8===9
-
-i=1<<2>>3>>>4|5&6^7
-j=max(1,2)+min(3,4)*angle(5,6)>angleDiff(7,8)
-k=len(1,2)+noise(3,4).^log(5,6)
-
-m=not(abs(sign(ln(lg(lb(floor(ceil(7.8))))))))
-n=round(sqrt(rand(sin(cos(tan(asin(acos(atan(9)))))))))
+i=max(min(len(1,2),noise(3,4)),angle(log(5,6),angleDiff(7,8)))
+j=not(abs(sign(ln(lg(lb(floor(ceil(7.8))))))))
+k=round(sqrt(rand(sin(cos(tan(asin(acos(atan(9)))))))))
 ```
 输出: [`case1.mdtcode`](./sample_cases/case1.mdtcode)
 
 
-### 3. 控制(无副作用)
+### 2. 控制(无副作用)
 ```githubexpressionlanguage
 ::控制(无副作用)
+wait(6)
+stop()
+end()
+
 print("1145{0}")
 printchar(64)
 format(14)
-wait(6)
-ubind(@mono)
-stop()
-end()
 ubind(@mono)
 uctrl(payDrop)
 ushoot(1).target(114,514)
 ushoot(i).target(ene1)
+raw("end")
 
 ::点控制(无副作用)
 b1.enable(false).config(null).color(0)
@@ -85,6 +79,9 @@ c.ulocate(turret).enemy(1)
 msg.pflush().dflush()
 color1.unpack(r,g,b,a)
 result.write(cell1,x1)
+
+::拓展
+printf("666{0}yf{1}",6,cr1)
 ```
 ```githubexpressionlanguage
 ::拓展
@@ -93,7 +90,7 @@ printf("666{0}yf{1}",6,cr1)
 输出: [`case2.mdtcode`](./sample_cases/case2.mdtcode)
 
 
-### 4. 控制(有副作用)
+### 3. 控制(有副作用)
 ```githubexpressionlanguage
 ::控制(有副作用)
 r=link(i)
@@ -102,15 +99,19 @@ b=uradar()===radar(t5).target(player,ground).order(0).sort(maxHealth)
 
 ::点控制(有副作用)
 x=b1.sensor(@lead)+c1.read(bit2)
+y=a.orElse(b).when(x!=0).orElse(c).when(r)
 ```
 输出: [`case3.mdtcode`](./sample_cases/case3.mdtcode)
 
 
-### 5. 跳转
+### 4. 跳转/分支/循环
 ```githubexpressionlanguage
 ::原生跳转jump
+::不指定标签时跳转到DEFAULT
+::不指定条件时始终跳转
+::tag1
 e=e+1
-jump(原生跳转jump).when(e<6)
+jump(tag1).when(e<6)
 
 ::分支if-else
 if(init==0){
@@ -144,7 +145,7 @@ jump2(0)
 输出: [`case4.mdtcode`](./sample_cases/case4.mdtcode)
 
 
-### 6. 绘图
+### 5. 绘图
 ```githubexpressionlanguage
 ::仅简单参数传递
 draw(clear)
@@ -152,7 +153,7 @@ draw(image,0,0,@copper,32,0,0)
 ```
 
 
-### 7. 函数
+### 6. 函数
 函数体应定义于主代码后, 分为有副作用和无副作用两种  
 定义时应指定输入参数和返回值名(void为无返回值)  
 调用时使用funcName(funcArgs)调用
@@ -204,7 +205,7 @@ function void onebind(u,u.type,u.fx){
 输出: [`case5.mdtcode`](./sample_cases/case5.mdtcode)
 
 
-### 8. 重复和导入
+### 7. 重复和导入
 repeat对代码段多次重复
 等价的1D数组实现, 嵌套即可实现n维数组
 ```githubexpressionlanguage

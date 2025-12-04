@@ -325,12 +325,13 @@ public class CodeCompiler {
                 return "";
             });
             put("tag(", s -> "::" + s);
+            put("raw(", s -> s.substring(1, s.length() - 1));
         }};
 
-        final List<String> ignoreKeys = List.of("jump(", "jump2(", "draw(", "ushoot(");
+        final List<String> ignoreKeys = List.of("jump(", "jump2(", "draw(", "ushoot(", "tag(", "raw(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
-                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotChain(expr, start);
                 if (end == -1) {
                     Utils.printError("Bracket unmatched of frontCode:\n> " + expr);
                     return stream;
@@ -371,7 +372,7 @@ public class CodeCompiler {
         String expr = stream.expr();
         String finalExpr = expr;
         var ref = new Object() {
-            final String block = Utils.getDotCtrlBlock(finalExpr);
+            final String block = Utils.getDotBlock(finalExpr);
             int midNum = stream.stat();
         };
 
@@ -427,7 +428,7 @@ public class CodeCompiler {
         final List<String> ignoreKeys = List.of(".shoot(", ".ulocate(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
-                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotChain(expr, start);
                 if (end == -1) {
                     Utils.printError("Bracket unmatched of frontCode:\n> " + expr);
                     return stream;
@@ -446,7 +447,7 @@ public class CodeCompiler {
                     }
                     String reduceContent = String.join(",", splitParts);
                     expr = expr.replace(s, reduceContent);
-                    end = Utils.getEndDotCtrl(expr, start);
+                    end = Utils.getEndDotChain(expr, start);
                     s = reduceContent;
                 }
                 String result = entry.getValue().apply(s);
@@ -507,7 +508,7 @@ public class CodeCompiler {
         final List<String> ignoreKeys = List.of(".orElse(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
-                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotChain(expr, start);
                 List<String> splitList = Utils.stringSplitPro(expr.substring(0, start));
                 ref.block = splitList.getLast();
 
@@ -638,7 +639,7 @@ public class CodeCompiler {
         for (Map<String, Function<String, String>> handlers : List.of(funcHandlers_high, funcHandlers_low)) {
             for (Map.Entry<String, Function<String, String>> entry : handlers.entrySet()) {
                 while (expr.contains(entry.getKey())) {
-                    int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotCtrl(expr, start);
+                    int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotChain(expr, start);
                     if (end == -1) {
                         Utils.printError("Bracket unmatched of frontCode:\n> " + expr);
                         return stream;
@@ -657,7 +658,7 @@ public class CodeCompiler {
                         }
                         String reduceContent = String.join(",", splitParts);
                         expr = expr.replace(s, reduceContent);
-                        end = Utils.getEndDotCtrl(expr, start);
+                        end = Utils.getEndDotChain(expr, start);
                         s = reduceContent;
                     }
                     String result = entry.getValue().apply(s);
@@ -887,13 +888,14 @@ public class CodeCompiler {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
-        if (bashList.size() > 1)
+        if (!bashList.isEmpty()) {
             bashList.add(bashList.size() - 1, "::END");
-        if (bashList.getLast().startsWith("::"))
-            bashList.add("end");
-        if (!bashList.contains("::DEFAULT"))
-            bashList.addFirst("::DEFAULT");
-        bashList.addFirst("::HEAD");
+            if (bashList.getLast().startsWith("::"))
+                bashList.add("end");
+            if (!bashList.contains("::DEFAULT"))
+                bashList.addFirst("::DEFAULT");
+            bashList.addFirst("::HEAD");
+        }
 
         if (Main.primeCodeLevel == 2) {
             String filePath = Main.filePath;

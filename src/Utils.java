@@ -10,8 +10,9 @@ import java.util.regex.Pattern;
 public class Utils {
     final static String[] dotCtrlCodes = {".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
             ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write("};
+    final static List<String> dotCodes = List.of(".sensor(", ".read(", ".orElse(");
     final static String[] ctrlCodes = {"print(", "printchar(", "format(", "wait(", "stop(",
-            "end(", "ubind(", "uctrl(", "ushoot(", "jump(", "jump2(", "printf(", "tag("};
+            "end(", "ubind(", "uctrl(", "ushoot(", "jump(", "jump2(", "printf(", "tag(", "raw("};
     final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
         put("op", 2);
         put("sensor", 1);
@@ -58,6 +59,8 @@ public class Utils {
         put("&", "and");
         put("^", "xor");
         put("=", "set");
+        put("(", "lbracket");
+        put(")", "rbracket");
     }};
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
 
@@ -124,13 +127,13 @@ public class Utils {
         System.err.println("\u001B[31m" + message + "\u001B[0m");
     }
 
-    static int getEndDotCtrl(String expr, int start) {
+    static int getEndDotChain(String expr, int start) {
         int end = getEndBracket(expr, start);
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
             if (expr.startsWith(".^", end + 1)) return end;
-            for (String key : dotCtrlCodes) {
-                if (expr.startsWith(key, end + 1)) return end;
-            }
+            for (String key : dotCtrlCodes) if (expr.startsWith(key, end + 1)) return end;
+            for (String key : dotCodes) if (expr.startsWith(key, end + 1)) return end;
+
             int endNext = getEndBracket(expr, end + 1);
             if (endNext != -1) end = endNext;
             else return end;
@@ -138,7 +141,7 @@ public class Utils {
         return end;
     }
 
-    static String getDotCtrlBlock(String expr) {
+    static String getDotBlock(String expr) {
         int index = expr.length() - 1;
         for (String key : dotCtrlCodes) {
             int keyIndex = expr.indexOf(key);
@@ -183,27 +186,33 @@ public class Utils {
         if (!token.toString().trim().isEmpty())
             tokens.add(token.toString().trim());
 
-        for (int i = 2; i < tokens.size() - 1; i++) {
-            if (tokens.get(i - 2).equals("(") && tokens.get(i - 1).equals("-") && isNumeric(tokens.get(i)) && tokens.get(i + 1).equals(")")) {
-                tokens.set(i - 2, "-" + tokens.get(i));
-                tokens.remove(i - 1);
-                tokens.remove(i - 1);
-                tokens.remove(i - 1);
-                i += 2;
+        for (int i = 1; i < tokens.size(); i++) {
+            if ((i == 1 || operatorKeyMap.containsKey(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
+                if (isNumeric(tokens.get(i))) {
+                    tokens.set(i, "-" + tokens.get(i));
+                    tokens.remove(i - 1);
+                    if (i > 2 && i < tokens.size() &&
+                            tokens.get(i - 2).equals("(") && tokens.get(i).equals(")")) {
+                        tokens.remove(i - 2);
+                        tokens.remove(i - 1);
+                    }
+                } else {
+                    tokens.add(i - 1, "0");
+                }
             }
         }
         return tokens;
     }
 
     static List<String> bracketPartSplit(String str) {
-        final List<String> keysSplit = List.of(",", ";");
         if (str.isEmpty()) return List.of();
+
         List<String> tokens = new ArrayList<>();
         List<String> splitList = stringSplit(str);
         int matchIndex = 0;
         StringBuilder token = new StringBuilder();
         for (String part : splitList) {
-            if (matchIndex == 0 && keysSplit.contains(part)) {
+            if (matchIndex == 0 && ",;".contains(part)) {
                 tokens.add(token.toString().trim());
                 token = new StringBuilder();
                 continue;
@@ -217,7 +226,7 @@ public class Utils {
 
     static List<String> stringSplitPro(String str) {
         if (str.isEmpty()) return List.of();
-        final String[] keysDot = {".sensor", ".read"};
+
         List<String> tokens = stringSplit(str);
         String tokenFirst = tokens.getFirst();
         if (tokenFirst.startsWith("::") && !tokenFirst.equals("::")) {
@@ -232,7 +241,7 @@ public class Utils {
             }
             if (token_now.equals("(")) {
                 token_dot = tokens.get(i - 1);
-                for (var key : keysDot) {
+                for (var key : dotCodes.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
                     if (token_dot.endsWith(key) && !token_dot.equals(key)) {
                         tokens.remove(i - 1);
                         tokens.add(i - 1, key);
@@ -369,10 +378,10 @@ public class Utils {
      * @return 逆波兰表达式数组
      */
     public static String[] generateRpn(String str) {
-        return rpn(new Stack<>(), stringSplit(str).toArray(String[]::new));
+        return rpn(new Stack<>(), stringSplit(str));
     }
 
-    public static String[] rpn(Stack<String> operators, String[] tokens) {
+    public static String[] rpn(Stack<String> operators, List<String> tokens) {
         ArrayList<String> output = new ArrayList<>();
         for (String token : tokens) {
             if (Operator.isOperator(token)) {

@@ -1,2 +1,4 @@
-getlink s 0
-select s notEqual @links 0 s c
+op add mid.1 1 -1
+op sub mid.2 0 x0
+op sub x mid.1 mid.2
+op add y -1145 b2

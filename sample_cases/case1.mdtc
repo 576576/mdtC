@@ -1,11 +1,11 @@
+::赋值
+x0="Hello World"
+
 ::计算
-x=1+(-1)
-y=1+2-3*4/5//6%7%%8.^9
-z=1==2!=3&&4<5<=6>7>=8===9
+x=1+(-1)-(-x0)*4/5//6%7%%8.^9
+y=1==(2!=3)&&4<5<=6>7>=8===9
+z=1<<2>>3>>>4|5&6^7
 
-i=1<<2>>3>>>4|5&6^7
-j=max(1,2)+min(3,4)*angle(5,6)>angleDiff(7,8)
-k=len(1,2)+noise(3,4).^log(5,6)
-
-m=not(abs(sign(ln(lg(lb(floor(ceil(7.8))))))))
-n=round(sqrt(rand(sin(cos(tan(asin(acos(atan(9)))))))))
+i=max(min(len(1,2),noise(3,4)),angle(log(5,6),angleDiff(7,8)))
+j=not(abs(sign(ln(lg(lb(floor(ceil(7.8))))))))
+k=round(sqrt(rand(sin(cos(tan(asin(acos(atan(9)))))))))

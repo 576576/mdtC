@@ -12,3 +12,5 @@ op strictEqual b mid.1 mid.2
 sensor mid.1 b1 @lead
 read mid.2 c1 bit2
 op add x mid.1 mid.2
+select mid.2 equal x 0 a b
+select y equal r 0 mid.2 c
