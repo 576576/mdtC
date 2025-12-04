@@ -4,7 +4,7 @@ import java.util.stream.IntStream;
 
 public class CodeCompiler {
     static void main() {
-        IO.println(convertCodeLine(stdIOStream.of("s=min(2+3,5)")).toStringArray());
+        IO.println(convertCodeLine(stdCodeStream.of("s=min(2+3,5)")).toStringArray());
     }
 
     /**
@@ -48,14 +48,14 @@ public class CodeCompiler {
         int refNumMax = 1;
         for (String line : codeBlock.split("\n")) {
             if (!line.trim().isEmpty()) {
-                stdIOStream convertedLine = convertCodeLine(stdIOStream.of(line.trim()));
+                stdCodeStream convertedLine = convertCodeLine(stdCodeStream.of(line.trim()));
                 refNumMax = Math.max(refNumMax, convertedLine.stat());
                 bashList.addAll(convertedLine.toStringArray());
             }
         }
 
-        stdIOStream result_set = convertSet(stdIOStream.of(bashList, refNumMax));
-        stdIOStream result_jump = convertJump(result_set);
+        stdCodeStream result_set = convertSet(stdCodeStream.of(bashList, refNumMax));
+        stdCodeStream result_jump = convertJump(result_set);
         return convertLink(result_jump).toString();
     }
 
@@ -161,7 +161,7 @@ public class CodeCompiler {
                 }
             }
         }
-        return stdIOStream.of(bashList).toString().trim();
+        return stdCodeStream.of(bashList).toString().trim();
     }
 
     /**
@@ -223,7 +223,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertCodeLine(stdIOStream stream) {
+    private static stdCodeStream convertCodeLine(stdCodeStream stream) {
         String codeLine = stream.expr();
         if (Utils.isSpecialControl(codeLine)) return stream;
         if (Utils.isCtrlCode(codeLine)) return convertCtrl(stream);
@@ -247,7 +247,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertCtrl(stdIOStream stream) {
+    private static stdCodeStream convertCtrl(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
         var ref = new Object() {
@@ -291,7 +291,7 @@ public class CodeCompiler {
                 s = paramsMap.getOrDefault("when", "");
                 List<String> splitList = Utils.stringSplitPro(s);
                 if (splitList.size() > 1) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
+                    stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
                         String bashLast = bashCache.bash().getLast();
@@ -312,7 +312,7 @@ public class CodeCompiler {
                 if (strSplit.size() > 1) s = "@counter=@counter" + s;
                 else s = "@counter=" + s;
 
-                stdIOStream jump2stream = convertCodeLine(stdIOStream.of(s));
+                stdCodeStream jump2stream = convertCodeLine(stdCodeStream.of(s));
                 bashList.addAll(jump2stream.bash());
                 return "";
             });
@@ -343,7 +343,7 @@ public class CodeCompiler {
                     for (int i = 0; i < splitParts.size(); i++) {
                         String part = splitParts.get(i);
 
-                        stdIOStream bashCache = convertCodeLine(stdIOStream.of(part, ref.midNum));
+                        stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(part, ref.midNum));
                         bashList.addAll(bashCache.bash());
                         splitParts.set(i, bashCache.expr());
                         ref.midNum = bashCache.stat();
@@ -356,7 +356,7 @@ public class CodeCompiler {
                 expr = "";
             }
         }
-        return stdIOStream.of(bashList);
+        return stdCodeStream.of(bashList);
     }
 
     /**
@@ -367,7 +367,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertDotCtrl(stdIOStream stream) {
+    private static stdCodeStream convertDotCtrl(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
         String finalExpr = expr;
@@ -440,7 +440,7 @@ public class CodeCompiler {
                     for (int i = 0; i < splitParts.size(); i++) {
                         String part = splitParts.get(i);
 
-                        stdIOStream bashCache = convertCodeLine(stdIOStream.of(part, ref.midNum));
+                        stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(part, ref.midNum));
                         bashList.addAll(bashCache.bash());
                         splitParts.set(i, bashCache.expr());
                         ref.midNum = bashCache.stat();
@@ -457,7 +457,7 @@ public class CodeCompiler {
             }
         }
         if (expr.equals(ref.block)) expr = "";
-        return new stdIOStream(bashList, expr);
+        return new stdCodeStream(bashList, expr);
     }
 
     /**
@@ -467,7 +467,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertDot(stdIOStream stream) {
+    private static stdCodeStream convertDot(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
         var ref = new Object() {
@@ -487,7 +487,7 @@ public class CodeCompiler {
                 s = paramsMap.getOrDefault("when", "");
                 List<String> splitList = Utils.stringSplitPro(s);
                 if (splitList.size() > 1) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
+                    stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
                         String bashLast = bashCache.bash().getLast();
@@ -516,7 +516,7 @@ public class CodeCompiler {
                 splitList = Utils.stringSplitPro(s);
                 String midVariable;
                 if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
-                    stdIOStream bashCache = convertCodeLine(stdIOStream.of(s, ref.midNum));
+                    stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
                         bashList.addAll(bashCache.bash());
@@ -531,7 +531,7 @@ public class CodeCompiler {
                 ref.midNum++;
             }
         }
-        return new stdIOStream(bashList, expr, ref.midNum);
+        return new stdCodeStream(bashList, expr, ref.midNum);
     }
 
     /**
@@ -544,7 +544,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertFront(stdIOStream stream) {
+    private static stdCodeStream convertFront(stdCodeStream stream) {
         ArrayList<String> bashList = new ArrayList<>(stream.bash());
         var ref = new Object() {
             int midNum = stream.stat();
@@ -651,7 +651,7 @@ public class CodeCompiler {
                         for (int i = 0; i < splitParts.size(); i++) {
                             String part = splitParts.get(i);
 
-                            stdIOStream bashCache = convertCodeLine(stdIOStream.of(part, ref.midNum));
+                            stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(part, ref.midNum));
                             bashList.addAll(bashCache.bash());
                             splitParts.set(i, bashCache.expr());
                             ref.midNum = bashCache.stat();
@@ -671,7 +671,7 @@ public class CodeCompiler {
             }
         }
 
-        return new stdIOStream(bashList, expr, ref.midNum);
+        return new stdCodeStream(bashList, expr, ref.midNum);
     }
 
 
@@ -682,7 +682,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertMiddle(stdIOStream stream) {
+    private static stdCodeStream convertMiddle(stdCodeStream stream) {
         String[] rpnArray = Utils.generateRpn(stream.expr());
         ArrayList<String> stack = new ArrayList<>();
         ArrayList<String> bashList = stream.bash();
@@ -730,7 +730,7 @@ public class CodeCompiler {
         for (String item : stack) {
             expr.append(item);
         }
-        return new stdIOStream(bashList, expr.toString(), ref.midNum);
+        return new stdCodeStream(bashList, expr.toString(), ref.midNum);
     }
 
     /**
@@ -738,7 +738,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertSet(stdIOStream stream) {
+    private static stdCodeStream convertSet(stdCodeStream stream) {
         final Map<String, Integer> offsetMap = Constant.operatorOffsetMap;
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
@@ -759,7 +759,7 @@ public class CodeCompiler {
                 }
             }
         }
-        return stdIOStream.of(bashList, expr, stream.stat());
+        return stdCodeStream.of(bashList, expr, stream.stat());
     }
 
     /**
@@ -767,7 +767,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertJump(stdIOStream stream) {
+    private static stdCodeStream convertJump(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         bashList.removeIf(String::isEmpty);
         var ref = new Object() {
@@ -793,7 +793,7 @@ public class CodeCompiler {
                 if (lineIndex != -1) {
                     Utils.printError("Error: {} not match at line " + lineIndex);
                     Utils.printError(lineIndex + " " + bashList.get(lineIndex));
-                    return stdIOStream.of();
+                    return stdCodeStream.of();
                 } else break;
             }
 
@@ -807,7 +807,7 @@ public class CodeCompiler {
                 String bracketContent = line.substring(start + 1, end);
 
                 String jumpString = "jump(" + tagTo + ").when(" + bracketContent + ")";
-                ArrayList<String> initStream = convertCtrl(stdIOStream.of(jumpString)).bash();
+                ArrayList<String> initStream = convertCtrl(stdCodeStream.of(jumpString)).bash();
                 jumpString = Utils.reverseCondition(initStream.getLast());
                 initStream.set(initStream.size() - 1, jumpString);
 
@@ -821,7 +821,7 @@ public class CodeCompiler {
                 String endIfLine = bashList.get(lineIndex - 1);
                 if (!endIfLine.startsWith("::") || !endIfLine.endsWith("_endIf")) {
                     Utils.printError("Error: else not match at line " + lineIndex);
-                    return stdIOStream.of();
+                    return stdCodeStream.of();
                 }
                 String jumpString = "jump " + tagTo + " always 0 0";
 
@@ -835,7 +835,7 @@ public class CodeCompiler {
                 String bracketContent = line2.substring(start + 1, end);
 
                 String jumpString = "jump(" + tagTo + ").when(" + bracketContent + ")";
-                bashCache = convertCtrl(stdIOStream.of(jumpString)).bash();
+                bashCache = convertCtrl(stdCodeStream.of(jumpString)).bash();
 
                 bashList.remove(line2Index);
                 bashList.addAll(line2Index, bashCache);
@@ -851,18 +851,18 @@ public class CodeCompiler {
                 String[] forParts = bracketContent.split(";");
                 if (forParts.length != 3) {
                     Utils.printError("Error: for() content not match");
-                    return stdIOStream.of();
+                    return stdCodeStream.of();
                 }
-                ArrayList<String> initStream = convertCodeLine(stdIOStream.of(forParts[0])).bash();
+                ArrayList<String> initStream = convertCodeLine(stdCodeStream.of(forParts[0])).bash();
 
                 String jumpString = "jump(" + tagEnd + ").when(" + forParts[1] + ")";
 
-                ArrayList<String> conditionStream = convertCtrl(stdIOStream.of(jumpString)).bash();
+                ArrayList<String> conditionStream = convertCtrl(stdCodeStream.of(jumpString)).bash();
                 jumpString = Utils.reverseCondition(conditionStream.getLast());
                 conditionStream.set(conditionStream.size() - 1, jumpString);
                 conditionStream.addFirst("::" + tagTo);
 
-                ArrayList<String> operateStream = convertCodeLine(stdIOStream.of(forParts[2])).bash();
+                ArrayList<String> operateStream = convertCodeLine(stdCodeStream.of(forParts[2])).bash();
                 operateStream.add("jump " + tagTo + " always 0 0");
                 operateStream.add("::" + tagEnd);
 
@@ -876,7 +876,7 @@ public class CodeCompiler {
                 Utils.printError("Undefined loop type of " + line);
             }
         }
-        return stdIOStream.of(bashList);
+        return stdCodeStream.of(bashList);
     }
 
     /**
@@ -884,7 +884,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdIOStream convertLink(stdIOStream stream) {
+    private static stdCodeStream convertLink(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
@@ -941,7 +941,7 @@ public class CodeCompiler {
         }
 
         bashList.removeIf(line -> line.startsWith("::"));
-        return new stdIOStream(bashList, expr);
+        return new stdCodeStream(bashList, expr);
     }
 
     /**

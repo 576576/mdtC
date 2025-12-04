@@ -23,7 +23,7 @@ public class CodeDecompiler {
             }
         }
 
-        var result_ctrl_free = convertCtrl(stdIOStream.of(bashList));
+        var result_ctrl_free = convertCtrl(stdCodeStream.of(bashList));
 
         return result_ctrl_free.toString();
     }
@@ -31,7 +31,7 @@ public class CodeDecompiler {
     /**
      * 逆转换输入代码中的{@code CtrlCode}
      */
-    public static stdIOStream convertCtrl(stdIOStream stream) {
+    public static stdCodeStream convertCtrl(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
@@ -56,13 +56,13 @@ public class CodeDecompiler {
             }
         }
 
-        return stdIOStream.of(bashList);
+        return stdCodeStream.of(bashList);
     }
 
     /**
      * 逆转换输入代码中的{@code DotCtrlCode}
      */
-    public static stdIOStream convertDotCtrl(stdIOStream stream) {
+    public static stdCodeStream convertDotCtrl(stdCodeStream stream) {
         return stream;
     }
 
@@ -70,28 +70,28 @@ public class CodeDecompiler {
      * 逆转换多重计算语句({@code DotCode} {@code FrontCode} {@code MidCode}),
      * 并重整为含=赋值行
      */
-    public static stdIOStream foldOperation(stdIOStream stream) {
+    public static stdCodeStream foldOperation(stdCodeStream stream) {
         return stream;
     }
 
     /**
      * 将原始jump绝对跳转转换为带标签的jump()
      */
-    public static stdIOStream convertJump(stdIOStream stream) {
+    public static stdCodeStream convertJump(stdCodeStream stream) {
         return stream;
     }
 
     /**
      * 重整涉及@counter的op/set语句为jump2()
      */
-    public static stdIOStream convertJump2(stdIOStream stream) {
+    public static stdCodeStream convertJump2(stdCodeStream stream) {
         return stream;
     }
 
     /**
      * 逆转换原生的jump为if/while
      */
-    public static stdIOStream convertPreJump(stdIOStream stream) {
+    public static stdCodeStream convertPreJump(stdCodeStream stream) {
         return stream;
     }
 }
