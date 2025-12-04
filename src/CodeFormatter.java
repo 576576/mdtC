@@ -1,15 +1,16 @@
 public class CodeFormatter {
-    static void main() {
-
-    }
-
+    /**
+     * 主代码格式化函数入口
+     *
+     */
     public static String format(String codeBlock) {
         final String[] keysStart = {"do{", "for(", "if(", "else{", "repeat(", "function "};
-        final String[] keysEnd = {"}while(", "}"};
+        final String[] keysEnd = {"}"};
+
         final String[] lines = codeBlock.split("\n");
         int matchIndex = 0;
         StringBuilder sb = new StringBuilder();
-        for (int i = 0, linesLength = lines.length; i < linesLength; i++) {
+        for (int i = 0; i < lines.length; i++) {
             String line = lines[i].trim();
             if (line.isEmpty()) {
                 sb.append("\n");

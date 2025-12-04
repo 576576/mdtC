@@ -5,65 +5,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Pattern;
 
 public class Utils {
-    final static String[] dotCtrlCodes = {".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
-            ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write("};
-    final static List<String> dotCodes = List.of(".sensor(", ".read(", ".orElse(");
-    final static String[] ctrlCodes = {"print(", "printchar(", "format(", "wait(", "stop(",
-            "end(", "ubind(", "uctrl(", "ushoot(", "jump(", "jump2(", "printf(", "tag(", "raw("};
-    final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
-        put("op", 2);
-        put("sensor", 1);
-        put("getlink", 1);
-        put("radar", 7);
-        put("uradar", 7);
-        put("lookup", 2);
-        put("packcolor", 1);
-        put("read", 1);
-        put("set", 1);
-        put("select", 1);
-    }};
-    final static Map<String, String> operatorReverseMap = new HashMap<>() {{
-        put("equal", "notEqual");
-        put("strictEqual", "notEqual");
-        put("always", "notEqual");
-        put("notEqual", "equal");
-        put("lessThan", "greaterThanEq");
-        put("lessThanEq", "greaterThan");
-        put("greaterThan", "lessThanEq");
-        put("greaterThanEq", "lessThan");
-    }};
-    final static Map<String, String> operatorKeyMap = new HashMap<>() {{
-        put("+", "add");
-        put("-", "sub");
-        put("*", "mul");
-        put("/", "div");
-        put("//", "idiv");
-        put("%", "mod");
-        put("%%", "emod");
-        put(".^", "pow");
-        put("==", "equal");
-        put("!=", "notEqual");
-        put("&&", "land");
-        put("<", "lessThan");
-        put("<=", "lessThanEq");
-        put(">", "greaterThan");
-        put(">=", "greaterThanEq");
-        put("===", "strictEqual");
-        put("<<", "shl");
-        put(">>", "shr");
-        put(">>>", "ushr");
-        put("|", "or");
-        put("&", "and");
-        put("^", "xor");
-        put("=", "set");
-        put("(", "lbracket");
-        put(")", "rbracket");
-    }};
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
-
     static void main() {
         IO.println(bracketPartSplit("7,min(8,9)"));
     }
@@ -114,12 +57,12 @@ public class Utils {
     }
 
     static boolean isDotCtrlCode(String codeLine) {
-        for (String command : dotCtrlCodes) if (codeLine.contains(command)) return true;
+        for (String command : Constant.dotCtrlCodes) if (codeLine.contains(command)) return true;
         return false;
     }
 
     static boolean isCtrlCode(String codeLine) {
-        for (String command : ctrlCodes) if (codeLine.startsWith(command)) return true;
+        for (String command : Constant.ctrlCodes) if (codeLine.startsWith(command)) return true;
         return false;
     }
 
@@ -131,8 +74,8 @@ public class Utils {
         int end = getEndBracket(expr, start);
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
             if (expr.startsWith(".^", end + 1)) return end;
-            for (String key : dotCtrlCodes) if (expr.startsWith(key, end + 1)) return end;
-            for (String key : dotCodes) if (expr.startsWith(key, end + 1)) return end;
+            for (String key : Constant.dotCtrlCodes) if (expr.startsWith(key, end + 1)) return end;
+            for (String key : Constant.dotCodes) if (expr.startsWith(key, end + 1)) return end;
 
             int endNext = getEndBracket(expr, end + 1);
             if (endNext != -1) end = endNext;
@@ -143,7 +86,7 @@ public class Utils {
 
     static String getDotBlock(String expr) {
         int index = expr.length() - 1;
-        for (String key : dotCtrlCodes) {
+        for (String key : Constant.dotCtrlCodes) {
             int keyIndex = expr.indexOf(key);
             if (keyIndex != -1 && keyIndex < index) index = keyIndex;
         }
@@ -187,7 +130,7 @@ public class Utils {
             tokens.add(token.toString().trim());
 
         for (int i = 1; i < tokens.size(); i++) {
-            if ((i == 1 || operatorKeyMap.containsKey(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
+            if ((i == 1 || Constant.operatorKeyMap.containsKey(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
                 if (isNumeric(tokens.get(i))) {
                     tokens.set(i, "-" + tokens.get(i));
                     tokens.remove(i - 1);
@@ -241,7 +184,7 @@ public class Utils {
             }
             if (token_now.equals("(")) {
                 token_dot = tokens.get(i - 1);
-                for (var key : dotCodes.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
+                for (var key : Constant.dotCodes.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
                     if (token_dot.endsWith(key) && !token_dot.equals(key)) {
                         tokens.remove(i - 1);
                         tokens.add(i - 1, key);
@@ -306,7 +249,7 @@ public class Utils {
     }
 
     static String reverseCondition(String codeLine) {
-        for (var op : operatorReverseMap.entrySet())
+        for (var op : Constant.operatorReverseMap.entrySet())
             if (codeLine.contains(op.getKey()))
                 return codeLine.replace(op.getKey(), op.getValue());
         return codeLine;
@@ -341,13 +284,13 @@ public class Utils {
         if (params.length == 0) return defaultCondition;
         String key = params[0];
         if (key.equals("op")) {
-            if (!operatorReverseMap.containsKey((params[1]))) {
-                String target = params[operatorOffsetMap.get(key)];
+            if (!Constant.operatorReverseMap.containsKey((params[1]))) {
+                String target = params[Constant.operatorOffsetMap.get(key)];
                 return String.join(" ", "notEqual", target, "0");
             }
             return String.join(" ", params[1], params[3], params[4]);
-        } else if (operatorOffsetMap.containsKey(key)) {
-            String target = params[operatorOffsetMap.get(key)];
+        } else if (Constant.operatorOffsetMap.containsKey(key)) {
+            String target = params[Constant.operatorOffsetMap.get(key)];
             return String.join(" ", "notEqual", target, "0");
         }
         return defaultCondition;
@@ -369,7 +312,7 @@ public class Utils {
     }
 
     public static boolean isNumeric(String str) {
-        return str != null && NUMBER_PATTERN.matcher(str).matches();
+        return str != null && Constant.NUMBER_PATTERN.matcher(str).matches();
     }
 
     /**

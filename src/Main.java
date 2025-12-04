@@ -1,16 +1,17 @@
 import org.apache.commons.cli.*;
 
-import java.util.List;
-
 public class Main {
     private static final String VERSION_TAG = "1.2";
-    public static boolean isToFormat, isFormatOnly, isOpenOutput;
-    public static String filePath = "", outPath = "";
-    public static int primeCodeLevel = 0;
+    static boolean isToFormat;
+    static boolean isFormatOnly;
+    static boolean isOpenOutput;
+    static String filePath = "";
+    static String outPath = "";
+    static int primeCodeLevel = 0;
 
     static void main(String[] args) {
-        final List<String> supportFormatList = List.of(new String[]{".mdtc", ".mdtcode", ".libmdtc"});
-        if (args.length != 0 && supportFormatList.contains(args[0])) filePath = args[0];
+        if (args.length != 0 && Constant.supportFormats.contains(args[0]))
+            filePath = args[0];
 
         Options options = new Options()
                 .addOption("v", "version", false, "显示版本信息")
@@ -54,10 +55,10 @@ public class Main {
     static void formatFile(String filePath, String outPath) {
         if (outPath.isEmpty()) outPath = filePath;
         String inputContent = Utils.readFile(filePath);
-
         String outContent = CodeFormatter.format(inputContent);
-        if (outContent.isEmpty()) {
-            IO.println("Nothing to format.");
+
+        if (outContent.isEmpty() || outContent.equals(inputContent)) {
+            IO.println("Nothing to format with.");
             return;
         }
 
@@ -68,9 +69,8 @@ public class Main {
     static void compileFile(String filePath, String outPath) {
         if (outPath.isEmpty()) outPath = filePath + "ode";
         String inputContent = Utils.readFile(filePath);
+        String outContent = CodeCompiler.compile(inputContent);
 
-        stdIOStream content = CodeCompiler.compile(inputContent);
-        String outContent = content.toString();
         if (outContent.isEmpty()) {
             Utils.printError("Null content, output cancelled.");
             return;
@@ -86,9 +86,8 @@ public class Main {
     static void decompileFile(String filePath, String outPath) {
         if (outPath.isEmpty()) outPath = filePath.substring(0, filePath.length() - 3);
         String inputContent = Utils.readFile(filePath);
+        String outContent = CodeDecompiler.decompile(inputContent);
 
-        stdIOStream content = CodeDecompiler.decompile(inputContent);
-        String outContent = content.toString();
         if (outContent.isEmpty()) {
             Utils.printError("Null content, output cancelled.");
             return;

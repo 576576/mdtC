@@ -13,7 +13,7 @@ public class CodeDecompiler {
     /**
      * 主转换函数入口
      */
-    public static stdIOStream decompile(String codeBlock){
+    public static String decompile(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
 
         for (String line : codeBlock.split("\n")) {
@@ -25,7 +25,7 @@ public class CodeDecompiler {
 
         var result_ctrl_free = convertCtrl(stdIOStream.of(bashList));
 
-        return result_ctrl_free;
+        return result_ctrl_free.toString();
     }
 
     /**

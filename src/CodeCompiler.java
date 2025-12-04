@@ -12,7 +12,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    public static stdIOStream compile(String codeBlock) {
+    public static String compile(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
         Map<Integer, stdFuncStream> funcMap = new HashMap<>();
 
@@ -56,7 +56,7 @@ public class CodeCompiler {
 
         stdIOStream result_set = convertSet(stdIOStream.of(bashList, refNumMax));
         stdIOStream result_jump = convertJump(result_set);
-        return convertLink(result_jump);
+        return convertLink(result_jump).toString();
     }
 
     private static String insertImport(String codeBlock) {
@@ -678,7 +678,7 @@ public class CodeCompiler {
     /**
      * <p>转换{@code MidCode}类型函数</p>
      * <p>{@code MidCode}为有副作用的以可逆波兰化形式中接调用函数,</p>
-     * <p>有效函数名详见{@link Utils#operatorKeyMap operators}</p>
+     * <p>有效函数名详见{@link Constant#operatorKeyMap operators}</p>
      *
      * @return {@code stdIOStream}
      */
@@ -689,8 +689,8 @@ public class CodeCompiler {
         var ref = new Object() {
             int midNum = stream.stat();
         };
-        final Map<String, String> operatorMap = Utils.operatorKeyMap;
-        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap;
+        final Map<String, String> operatorMap = Constant.operatorKeyMap;
+        final Map<String, Integer> offsetMap = Constant.operatorOffsetMap;
 
         for (String token : rpnArray) {
             if (operatorMap.containsKey(token)) {
@@ -739,7 +739,7 @@ public class CodeCompiler {
      * @return {@code stdIOStream}
      */
     private static stdIOStream convertSet(stdIOStream stream) {
-        final Map<String, Integer> offsetMap = Utils.operatorOffsetMap;
+        final Map<String, Integer> offsetMap = Constant.operatorOffsetMap;
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
