@@ -2,12 +2,16 @@
 ::示例使用
 println("Hello world")
 message1.pflush()
+jump(bind.end).when(bind.end==0)
 for(e=0;e<@links;e=e+1){
 	t=link(e)
 	t.enable(isReactorSafe(t))
 }
 onebind(u,@mono,114514)
-
+::bind.end
+bind.end=@counter+1
+end()
+something=operations
 
 ::示例定义(无副作用)
 ::例:println

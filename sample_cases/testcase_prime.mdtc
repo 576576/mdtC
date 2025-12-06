@@ -1,8 +1,16 @@
-::HEAD
-::DEFAULT
-::Test cases
-op add mid.1 1 -1
-op sub mid.2 0 x0
-op sub x mid.1 mid.2
-::END
-op add y -1145 b2
+getlink r i
+lookup team mid.1 LookupIndex
+lookup liquid mid.2 mid.1
+lookup item mid.3 mid.2
+lookup unit mid.4 mid.3
+lookup block mid.5 mid.4
+packcolor mid.6 r g b a
+op mul g mid.5 mid.6
+uradar enemy any any distance 0 1 mid.1
+radar player ground any maxHealth t5 0 mid.2
+op strictEqual b mid.1 mid.2
+sensor mid.1 b1 @lead
+read mid.2 c1 bit2
+op add x mid.1 mid.2
+select mid.2 equal x 0 a b
+select y equal r 0 mid.2 c

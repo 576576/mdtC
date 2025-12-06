@@ -3,14 +3,8 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 public class CodeCompiler {
-    static void main() {
-        IO.println(convertCodeLine(stdCodeStream.of("s=min(2+3,5)")).toStringArray());
-    }
-
     /**
      * 主转换函数入口
-     *
-     * @return {@code stdIOStream}
      */
     public static String compile(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>();
@@ -45,26 +39,26 @@ public class CodeCompiler {
             } else IO.println("Skip writing prime code.");
         }
 
+        codeBlock = CodeFormatter.deformat(codeBlock);
+
         int refNumMax = 1;
         for (String line : codeBlock.split("\n")) {
-            if (!line.trim().isEmpty()) {
-                stdCodeStream convertedLine = convertCodeLine(stdCodeStream.of(line.trim()));
-                refNumMax = Math.max(refNumMax, convertedLine.stat());
-                bashList.addAll(convertedLine.toStringArray());
-            }
+            stdCodeStream codeStream = convertCodeLine(stdCodeStream.of(line));
+            refNumMax = Math.max(refNumMax, codeStream.stat());
+            bashList.addAll(codeStream.toList());
         }
 
         stdCodeStream result_set = convertSet(stdCodeStream.of(bashList, refNumMax));
         stdCodeStream result_jump = convertJump(result_set);
-        return convertLink(result_jump).toString();
+        return convertLink(result_jump).toString().trim();
     }
 
-    private static String insertImport(String codeBlock) {
+    static String insertImport(String codeBlock) {
         ArrayList<String> bashList = new ArrayList<>(List.of(codeBlock.split("\n")));
         List<String> importLines = bashList.stream()
                 .filter(line -> line.startsWith("import ")).toList();
         bashList.removeIf(line -> line.startsWith("import "));
-        StringBuilder codeBlockBuilder = new StringBuilder(Utils.listToCodeBlock(bashList));
+        StringBuilder codeBlockBuilder = new StringBuilder(Utils.stringBlockOf(bashList));
         for (var line : importLines) {
             String importPath = line.substring(6).trim();
             if (!importPath.endsWith("mdtc")) importPath += ".libmdtc";
@@ -87,7 +81,7 @@ public class CodeCompiler {
      * <p>展开{@code repeat}块</p>
      * <p>等价的1D数组实现, 嵌套即可实现n维数组</p>
      */
-    private static String unfoldRepeat(String codeBlock) {
+    static String unfoldRepeat(String codeBlock) {
         var ref = new Object() {
             int midNum = 1;
         };
@@ -169,7 +163,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static String insertFunc(String codeBlock, Map<Integer, stdFuncStream> funcMap) {
+    static String insertFunc(String codeBlock, Map<Integer, stdFuncStream> funcMap) {
         var ref = new Object() {
             int midNum = 1;
         };
@@ -181,7 +175,7 @@ public class CodeCompiler {
                 stdFuncStream funcStream = func.getValue();
                 String funcName = funcStream.name();
                 List<String> varsList = funcStream.varsList();
-                int varsNum = funcStream.vars();
+                int varsNum = funcStream.varsCount();
 
                 int ignoreIndex = 0;
                 while (bash.contains(funcName)) {
@@ -215,7 +209,7 @@ public class CodeCompiler {
             }
             if (!bash.trim().isEmpty()) bashCache.add(bash);
         }
-        return Utils.listToCodeBlock(bashCache);
+        return Utils.stringBlockOf(bashCache);
     }
 
     /**
@@ -223,7 +217,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertCodeLine(stdCodeStream stream) {
+    static stdCodeStream convertCodeLine(stdCodeStream stream) {
         String codeLine = stream.expr();
         if (Utils.isSpecialControl(codeLine)) return stream;
         if (Utils.isCtrlCode(codeLine)) return convertCtrl(stream);
@@ -247,7 +241,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertCtrl(stdCodeStream stream) {
+    static stdCodeStream convertCtrl(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
         var ref = new Object() {
@@ -263,7 +257,7 @@ public class CodeCompiler {
             put("end(", _ -> "end");
 
             put("ubind(", s -> "ubind " + s);
-            put("uctrl(", s -> "ucontrol " + Utils.padParams(s.replace(',', ' '), 6));
+            put("uctrl(", s -> "ucontrol " + Utils.padParams(6, s));
 
             put("ushoot(", s -> {
                 final String defaultTarget = "@this", defaultShooting = "1";
@@ -275,11 +269,11 @@ public class CodeCompiler {
                 ctrlType = target.contains(",") ? "target" : "targetp";
 
                 target = target.replace(',', ' ');
-                String shootArgs = Utils.padParams(target + " " + shooting, 5);
+                String shootArgs = Utils.padParams(5, target, shooting);
                 return "ucontrol " + ctrlType + " " + shootArgs;
             });
 
-            put("draw(", s -> "draw " + Utils.padParams(s.replace(',', ' '), 7));
+            put("draw(", s -> "draw " + Utils.padParams(7, s));
 
             put("jump(", s -> {
                 final String defaultTarget = "DEFAULT", defaultCondition = "always 0 0";
@@ -367,7 +361,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertDotCtrl(stdCodeStream stream) {
+    static stdCodeStream convertDotCtrl(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
         String finalExpr = expr;
@@ -377,10 +371,18 @@ public class CodeCompiler {
         };
 
         Map<String, Function<String, String>> funcHandlers = new HashMap<>() {{
-            put(".ctrl(", s -> "control " + Utils.padParams(s.replace(',', ' '), 5));
-            put(".enable(", s -> "control enabled " + ref.block + " " + Utils.padParams(s, 4));
-            put(".config(", s -> "control config " + ref.block + " " + Utils.padParams(s, 4));
-            put(".color(", s -> "control color " + ref.block + " " + Utils.padParams(s, 4));
+            put(".ctrl(", s -> {
+                String ctrlType = "enabled", target = "";
+                String[] params = s.split(",", 2);
+                if (params.length > 1) {
+                    ctrlType = params[0];
+                    target = params[1];
+                }
+                return String.join(" ", "control" + ctrlType + ref.block + Utils.padParams(4, target));
+            });
+            put(".enable(", s -> "control enabled " + ref.block + " " + Utils.padParams(4, s));
+            put(".config(", s -> "control config " + ref.block + " " + Utils.padParams(4, s));
+            put(".color(", s -> "control color " + ref.block + " " + Utils.padParams(4, s));
             put(".shoot(", s -> {
                 final String defaultTarget = "@this", defaultShooting = "1";
                 String target, ctrlType, shooting;
@@ -391,7 +393,7 @@ public class CodeCompiler {
                 ctrlType = target.contains(",") ? "shoot" : "shootp";
 
                 target = target.replace(',', ' ');
-                String shootArgs = Utils.padParams(target + " " + shooting, 4);
+                String shootArgs = Utils.padParams(4, target, shooting);
                 return "control " + ctrlType + " " + ref.block + " " + shootArgs;
             });
 
@@ -413,7 +415,7 @@ public class CodeCompiler {
                 return String.join(" ", "ulocate", locateType, building, enemy, ore, ref.block + ".x", ref.block + ".y", ref.block + ".f", ref.block);
             });
 
-            put(".unpack(", s -> "unpackcolor " + Utils.padParams(s.split(","), 4) + " " + ref.block);
+            put(".unpack(", s -> "unpackcolor " + Utils.padParams(4, s) + " " + ref.block);
             put(".pflush(", _ -> "printflush " + ref.block);
             put(".dflush(", _ -> "drawflush " + ref.block);
             put(".write(", s -> {
@@ -457,7 +459,7 @@ public class CodeCompiler {
             }
         }
         if (expr.equals(ref.block)) expr = "";
-        return new stdCodeStream(bashList, expr);
+        return stdCodeStream.of(bashList, expr);
     }
 
     /**
@@ -467,7 +469,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertDot(stdCodeStream stream) {
+    static stdCodeStream convertDot(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
         var ref = new Object() {
@@ -544,7 +546,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertFront(stdCodeStream stream) {
+    static stdCodeStream convertFront(stdCodeStream stream) {
         ArrayList<String> bashList = new ArrayList<>(stream.bash());
         var ref = new Object() {
             int midNum = stream.stat();
@@ -594,12 +596,19 @@ public class CodeCompiler {
                 return "op logn mid." + ref.midNum + " " + paramParts[1].trim() + " " + paramParts[0].trim();
             });
             put("link(", s -> "getlink mid." + ref.midNum + " " + s);
+            put("lookup(", s -> {
+                String lookupType = "block", index = "0";
+                String[] paramParts = s.split(",");
+                if (paramParts.length > 0) index = paramParts[paramParts.length - 1];
+                if (paramParts.length > 1) lookupType = paramParts[0];
+                return String.join(" ", "lookup", lookupType, "mid." + ref.midNum, index);
+            });
             put("block(", s -> "lookup block mid." + ref.midNum + " " + s);
             put("unit(", s -> "lookup unit mid." + ref.midNum + " " + s);
             put("item(", s -> "lookup item mid." + ref.midNum + " " + s);
             put("liquid(", s -> "lookup liquid mid." + ref.midNum + " " + s);
             put("team(", s -> "lookup team mid." + ref.midNum + " " + s);
-            put("pack(", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(s.split(","), 4));
+            put("pack(", s -> "packcolor mid." + ref.midNum + " " + Utils.padParams(4, s));
             put("uradar(", s -> {
                 final String block = "0", defaultTarget = "enemy,any,any", defaultOrder = "1", defaultSort = "distance";
                 String target, order, sort;
@@ -609,7 +618,7 @@ public class CodeCompiler {
                 order = paramsMap.getOrDefault("order", defaultOrder);
                 sort = paramsMap.getOrDefault("sort", defaultSort);
 
-                target = Utils.padParams(target.split(","), 3, "any");
+                target = Utils.padParams("any", 3, target);
                 return "uradar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
             });
         }};
@@ -628,7 +637,7 @@ public class CodeCompiler {
                 order = paramsMap.getOrDefault("order", defaultOrder);
                 sort = paramsMap.getOrDefault("sort", defaultSort);
 
-                target = Utils.padParams(target.split(","), 3, "any");
+                target = Utils.padParams("any", 3, target);
                 return "radar " + target + " " + sort + " " + block + " " + order + " mid." + ref.midNum;
             });
         }};
@@ -678,19 +687,19 @@ public class CodeCompiler {
     /**
      * <p>转换{@code MidCode}类型函数</p>
      * <p>{@code MidCode}为有副作用的以可逆波兰化形式中接调用函数,</p>
-     * <p>有效函数名详见{@link Constant#operatorKeyMap operators}</p>
+     * <p>有效函数名详见{@link Constants#operatorKeyMap operators}</p>
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertMiddle(stdCodeStream stream) {
-        String[] rpnArray = Utils.generateRpn(stream.expr());
+    static stdCodeStream convertMiddle(stdCodeStream stream) {
+        List<String> rpnArray = Utils.generateRpn(stream.expr());
         ArrayList<String> stack = new ArrayList<>();
         ArrayList<String> bashList = stream.bash();
         var ref = new Object() {
             int midNum = stream.stat();
         };
-        final Map<String, String> operatorMap = Constant.operatorKeyMap;
-        final Map<String, Integer> offsetMap = Constant.operatorOffsetMap;
+        final Map<String, String> operatorMap = Constants.operatorKeyMap;
+        final Map<String, Integer> offsetMap = Constants.operatorOffsetMap;
 
         for (String token : rpnArray) {
             if (operatorMap.containsKey(token)) {
@@ -738,8 +747,8 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertSet(stdCodeStream stream) {
-        final Map<String, Integer> offsetMap = Constant.operatorOffsetMap;
+    static stdCodeStream convertSet(stdCodeStream stream) {
+        final Map<String, Integer> offsetMap = Constants.operatorOffsetMap;
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
@@ -767,7 +776,7 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertJump(stdCodeStream stream) {
+    static stdCodeStream convertJump(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         bashList.removeIf(String::isEmpty);
         var ref = new Object() {
@@ -884,28 +893,29 @@ public class CodeCompiler {
      *
      * @return {@code stdIOStream}
      */
-    private static stdCodeStream convertLink(stdCodeStream stream) {
+    static stdCodeStream convertLink(stdCodeStream stream) {
         ArrayList<String> bashList = stream.bash();
         String expr = stream.expr();
 
+        if (Main.primeCodeLevel == 2) {
+            String filePath = Main.filePath;
+            if (filePath.endsWith(".mdtc") && !filePath.endsWith("_prime.mdtc")) {
+                String primeCodePath = filePath.replace(".mdtc", "_prime.mdtc");
+                String writeContent = Utils.stringBlockOf(bashList);
+                Utils.writeFile(primeCodePath, writeContent);
+
+                IO.println("PrimeCode output at:\n> " + primeCodePath);
+            } else IO.println("Skip writing prime code.");
+        }
+
         if (!bashList.isEmpty()) {
+            Utils.removeSpareTags(bashList);
             bashList.add(bashList.size() - 1, "::END");
             if (bashList.getLast().startsWith("::"))
                 bashList.add("end");
             if (!bashList.contains("::DEFAULT"))
                 bashList.addFirst("::DEFAULT");
             bashList.addFirst("::HEAD");
-        }
-
-        if (Main.primeCodeLevel == 2) {
-            String filePath = Main.filePath;
-            if (filePath.endsWith(".mdtc") && !filePath.endsWith("_prime.mdtc")) {
-                String primeCodePath = filePath.replace(".mdtc", "_prime.mdtc");
-                String writeContent = Utils.listToCodeBlock(bashList);
-                Utils.writeFile(primeCodePath, writeContent);
-
-                IO.println("PrimeCode output at:\n> " + primeCodePath);
-            } else IO.println("Skip writing prime code.");
         }
 
         int tagNum;
@@ -941,7 +951,7 @@ public class CodeCompiler {
         }
 
         bashList.removeIf(line -> line.startsWith("::"));
-        return new stdCodeStream(bashList, expr);
+        return stdCodeStream.of(bashList, expr);
     }
 
     /**
@@ -972,7 +982,7 @@ public class CodeCompiler {
                             .toList();
 
                     stdFuncStream funcStream = stdFuncStream.of(funcName, bashCache, varsList, tagsList);
-                    int funcHash = Objects.hash(funcName, funcStream.varsNum());
+                    int funcHash = Objects.hash(funcName, funcStream.varsCount());
                     funcMap.put(funcHash, funcStream);
                     bashCache = new ArrayList<>();
                 }

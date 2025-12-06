@@ -1,23 +1,29 @@
 import java.awt.*;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.List;
 
 public class Utils {
-    static void main() {
-        IO.println(bracketPartSplit("7,min(8,9)"));
-    }
-
     static String readFile(String filePath) {
+        Path path = Paths.get(filePath);
         try {
-            return Files.readString(Paths.get(filePath));
-        } catch (IOException e) {
-            printError("Unable to read file: " + e.getMessage());
-            return "";
+            return Files.readString(path);
+        } catch (FileNotFoundException e) {
+            try {
+                Files.createFile(path);
+            } catch (IOException ex) {
+                printError("Unable to create file: " + ex.getMessage());
+            }
         }
+        catch (IOException e) {
+            printError("Unable to read file: " + e.getMessage());
+        }
+        return "";
     }
 
     static void writeFile(String filePath, String content) {
@@ -40,29 +46,57 @@ public class Utils {
         }
     }
 
-    static String padParams(String[] params, int paramNum, String defaultParam) {
+    static String formatParams(int paramNum, String[] params, String defaultParam, String delimiter) {
         params = Arrays.copyOf(params, paramNum);
         for (int i = 0; i < params.length; i++)
             if (params[i] == null) params[i] = defaultParam;
-        return String.join(" ", params);
+        return String.join(delimiter, params);
     }
 
-    static String padParams(String[] params, int paramNum) {
-        return padParams(params, paramNum, "0");
+    static String padParams(String defaultParam, int paramNum, String paramString) {
+        return formatParams(paramNum, paramString.split(","), defaultParam, " ");
     }
 
-    static String padParams(String paramString, int paramNum) {
-        String[] params = paramString.split(" ");
-        return padParams(params, paramNum);
+    static String padParams(int paramNum, String... params) {
+        return formatParams(paramNum, params, "0", " ");
+    }
+
+    static String padParams(int paramNum, String paramString) {
+        return formatParams(paramNum, paramString.split(","), "0", " ");
+    }
+
+    static String reduceParams(String defaultParam, String paramString) {
+        int dpLength = defaultParam.length();
+        while (paramString.endsWith(defaultParam)) {
+            paramString = paramString.substring(0, paramString.length() - dpLength).trim();
+        }
+        return paramString.replace(" ", ",");
+    }
+
+    static String reduceParams(String defaultParam, String... params) {
+        String paramString = String.join(" ", params);
+        return reduceParams(defaultParam, paramString);
+    }
+
+    static String reduceParams(String defaultParam,int paramNum, String... params) {
+        params = Arrays.copyOf(params, paramNum);
+        for (int i = 0; i < params.length; i++)
+            if (params[i] == null) params[i] = defaultParam;
+        return reduceParams(defaultParam, params);
+    }
+
+    static String reduceCondition(String condition) {
+        String[] params = condition.split(" ", 3);
+        return params[1] + Constants.operatorValueMap.get(params[0]) + params[2];
     }
 
     static boolean isDotCtrlCode(String codeLine) {
-        for (String command : Constant.dotCtrlCodes) if (codeLine.contains(command)) return true;
+        for (String command : Constants.dotCtrlCodes) if (codeLine.contains(command)) return true;
         return false;
     }
 
     static boolean isCtrlCode(String codeLine) {
-        for (String command : Constant.ctrlCodes) if (codeLine.startsWith(command)) return true;
+        for (String command : Constants.ctrlCodes) if (codeLine.startsWith(command)) return true;
         return false;
     }
 
@@ -74,8 +108,8 @@ public class Utils {
         int end = getEndBracket(expr, start);
         while (end < expr.length() - 1 && expr.charAt(end + 1) == '.') {
             if (expr.startsWith(".^", end + 1)) return end;
-            for (String key : Constant.dotCtrlCodes) if (expr.startsWith(key, end + 1)) return end;
-            for (String key : Constant.dotCodes) if (expr.startsWith(key, end + 1)) return end;
+            for (String key : Constants.dotCtrlCodes) if (expr.startsWith(key, end + 1)) return end;
+            for (String key : Constants.dotCodes) if (expr.startsWith(key, end + 1)) return end;
 
             int endNext = getEndBracket(expr, end + 1);
             if (endNext != -1) end = endNext;
@@ -86,7 +120,7 @@ public class Utils {
 
     static String getDotBlock(String expr) {
         int index = expr.length() - 1;
-        for (String key : Constant.dotCtrlCodes) {
+        for (String key : Constants.dotCtrlCodes) {
             int keyIndex = expr.indexOf(key);
             if (keyIndex != -1 && keyIndex < index) index = keyIndex;
         }
@@ -130,7 +164,7 @@ public class Utils {
             tokens.add(token.toString().trim());
 
         for (int i = 1; i < tokens.size(); i++) {
-            if ((i == 1 || Constant.operatorKeyMap.containsKey(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
+            if ((i == 1 || Constants.operatorKeyMap.containsKey(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
                 if (isNumeric(tokens.get(i))) {
                     tokens.set(i, "-" + tokens.get(i));
                     tokens.remove(i - 1);
@@ -184,7 +218,7 @@ public class Utils {
             }
             if (token_now.equals("(")) {
                 token_dot = tokens.get(i - 1);
-                for (var key : Constant.dotCodes.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
+                for (var key : Constants.dotCodes.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
                     if (token_dot.endsWith(key) && !token_dot.equals(key)) {
                         tokens.remove(i - 1);
                         tokens.add(i - 1, key);
@@ -202,7 +236,7 @@ public class Utils {
         return list.stream().reduce("", (a, b) -> a + b);
     }
 
-    static String listToCodeBlock(ArrayList<String> bashList) {
+    static String stringBlockOf(List<String> bashList) {
         return bashList.stream().reduce("", (a, b) -> a + "\n" + b).trim();
     }
 
@@ -249,7 +283,7 @@ public class Utils {
     }
 
     static String reverseCondition(String codeLine) {
-        for (var op : Constant.operatorReverseMap.entrySet())
+        for (var op : Constants.operatorReverseMap.entrySet())
             if (codeLine.contains(op.getKey()))
                 return codeLine.replace(op.getKey(), op.getValue());
         return codeLine;
@@ -284,13 +318,13 @@ public class Utils {
         if (params.length == 0) return defaultCondition;
         String key = params[0];
         if (key.equals("op")) {
-            if (!Constant.operatorReverseMap.containsKey((params[1]))) {
-                String target = params[Constant.operatorOffsetMap.get(key)];
+            if (!Constants.operatorReverseMap.containsKey((params[1]))) {
+                String target = params[Constants.operatorOffsetMap.get(key)];
                 return String.join(" ", "notEqual", target, "0");
             }
             return String.join(" ", params[1], params[3], params[4]);
-        } else if (Constant.operatorOffsetMap.containsKey(key)) {
-            String target = params[Constant.operatorOffsetMap.get(key)];
+        } else if (Constants.operatorOffsetMap.containsKey(key)) {
+            String target = params[Constants.operatorOffsetMap.get(key)];
             return String.join(" ", "notEqual", target, "0");
         }
         return defaultCondition;
@@ -312,7 +346,7 @@ public class Utils {
     }
 
     public static boolean isNumeric(String str) {
-        return str != null && Constant.NUMBER_PATTERN.matcher(str).matches();
+        return str != null && Constants.NUMBER_PATTERN.matcher(str).matches();
     }
 
     /**
@@ -320,12 +354,13 @@ public class Utils {
      *
      * @return 逆波兰表达式数组
      */
-    public static String[] generateRpn(String str) {
-        return rpn(new Stack<>(), stringSplit(str));
+    public static List<String> generateRpn(String str) {
+        return rpn(stringSplit(str));
     }
 
-    public static String[] rpn(Stack<String> operators, List<String> tokens) {
-        ArrayList<String> output = new ArrayList<>();
+    public static List<String> rpn(List<String> tokens) {
+        List<String> output = new ArrayList<>();
+        Stack<String> operators = new Stack<>();
         for (String token : tokens) {
             if (Operator.isOperator(token)) {
                 if (token.equals("(")) {
@@ -356,7 +391,20 @@ public class Utils {
                 operators.pop(); // Remove any remaining left parentheses
             }
         }
-        return output.toArray(new String[0]);
+        return output;
+    }
+
+    static void removeSpareTags(ArrayList<String> bashList) {
+        for (int i = 0; i < bashList.size(); i++) {
+            String line = bashList.get(i);
+            if (line.startsWith("::")) {
+                String tagTo = line.substring(2);
+                if (bashList.stream().noneMatch(l -> l.startsWith("jump " + tagTo + " "))) {
+                    bashList.remove(i);
+                    i--;
+                }
+            }
+        }
     }
 
     /**

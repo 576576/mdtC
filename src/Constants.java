@@ -3,7 +3,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class Constant {
+public class Constants {
     final static Pattern NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
     final static List<String> dotCtrlCodes = List.of(".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
             ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write(");
@@ -21,6 +21,11 @@ public class Constant {
         put("read", 1);
         put("set", 1);
         put("select", 1);
+    }};
+    final static Map<String, String> operatorAliasMap = new HashMap<>() {{
+        put("log10", "lg");
+        put("log", "ln");
+        put("logn", "log");
     }};
     final static Map<String, String> operatorReverseMap = new HashMap<>() {{
         put("equal", "notEqual");
@@ -59,5 +64,34 @@ public class Constant {
         put("(", "lbracket");
         put(")", "rbracket");
     }};
+    final static Map<String, String> operatorValueMap = new HashMap<>() {{
+        put("add", "+");
+        put("sub", "-");
+        put("mul", "*");
+        put("div", "/");
+        put("idiv", "//");
+        put("mod", "%");
+        put("emod", "%%");
+        put("pow", ".^");
+        put("equal", "==");
+        put("notEqual", "!=");
+        put("land", "&&");
+        put("lessThan", "<");
+        put("lessThanEq", "<=");
+        put("greaterThan", ">");
+        put("greaterThanEq", ">=");
+        put("strictEqual", "===");
+        put("shl", "<<");
+        put("shr", ">>");
+        put("ushr", ">>>");
+        put("or", "|");
+        put("and", "&");
+        put("xor", "^");
+        put("set", "=");
+        put("lbracket", "(");
+        put("rbracket", ")");
+        put("always", "==");
+    }};
+
     final static List<String> supportFormats = List.of(".mdtc", ".mdtcode", ".libmdtc");
 }

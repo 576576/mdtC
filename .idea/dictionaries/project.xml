@@ -6,6 +6,7 @@
       <w>emod</w>
       <w>getlink</w>
       <w>idiv</w>
+      <w>lbracket</w>
       <w>libmdtc</w>
       <w>logn</w>
       <w>maph</w>
@@ -16,6 +17,7 @@
       <w>pflush</w>
       <w>printchar</w>
       <w>printflush</w>
+      <w>rbracket</w>
       <w>shootp</w>
       <w>targetp</w>
       <w>thisx</w>

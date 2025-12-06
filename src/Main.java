@@ -1,7 +1,7 @@
 import org.apache.commons.cli.*;
 
 public class Main {
-    private static final String VERSION_TAG = "1.2";
+    private static final String VERSION_TAG = "1.31";
     static boolean isToFormat;
     static boolean isFormatOnly;
     static boolean isOpenOutput;
@@ -10,7 +10,7 @@ public class Main {
     static int primeCodeLevel = 0;
 
     static void main(String[] args) {
-        if (args.length != 0 && Constant.supportFormats.contains(args[0]))
+        if (args.length != 0 && Constants.supportFormats.contains(args[0]))
             filePath = args[0];
 
         Options options = new Options()
@@ -58,7 +58,7 @@ public class Main {
         String outContent = CodeFormatter.format(inputContent);
 
         if (outContent.isEmpty() || outContent.equals(inputContent)) {
-            IO.println("Nothing to format with.");
+            IO.println("Nothing to format with, skipped.");
             return;
         }
 
@@ -67,12 +67,13 @@ public class Main {
     }
 
     static void compileFile(String filePath, String outPath) {
-        if (outPath.isEmpty()) outPath = filePath + "ode";
+        if (outPath.isEmpty()) outPath = filePath.replace(".mdtc", ".mdtcode");
         String inputContent = Utils.readFile(filePath);
+        String outputRead = Utils.readFile(outPath);
         String outContent = CodeCompiler.compile(inputContent);
 
-        if (outContent.isEmpty()) {
-            Utils.printError("Null content, output cancelled.");
+        if (outContent.equals(outputRead)) {
+            IO.println("Identical output, skipped.");
             return;
         }
 
@@ -84,17 +85,18 @@ public class Main {
     }
 
     static void decompileFile(String filePath, String outPath) {
-        if (outPath.isEmpty()) outPath = filePath.substring(0, filePath.length() - 3);
+        if (outPath.isEmpty()) outPath = filePath.replace(".mdtcode", ".mdtc");
         String inputContent = Utils.readFile(filePath);
+        String outputRead = Utils.readFile(outPath);
         String outContent = CodeDecompiler.decompile(inputContent);
 
-        if (outContent.isEmpty()) {
-            Utils.printError("Null content, output cancelled.");
+        if (outContent.equals(outputRead)) {
+            IO.println("Identical output, skipped.");
             return;
         }
 
         Utils.writeFile(outPath, outContent);
-        IO.println("Reversed output at:\n> " + outPath);
+        IO.println("Decompiled output at:\n> " + outPath);
 
         if (isToFormat) formatFile(outPath, outPath);
         if (isOpenOutput) Utils.openWithExplorer(outPath);

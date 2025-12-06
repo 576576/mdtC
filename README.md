@@ -1,9 +1,9 @@
-# MdtC
-Version: `1.2`
+# MindustryC
+Version: `1.32`
 
-本转换器用于将类Java代码转为mindustry处理器代码.  
-输入: 由类java语言(aka.`mdtc`)编写,`.mdtc`后缀文件.  
-输出: 用于Mindustry处理器的语句输出到`.mdtcode`.
+本转换器支持类Java代码和mindustry逻辑代码互转.  
+输入: `*.mdtc` `*.mdtcode` `*.libmdtc`.  
+输出: `*.mdtcode`(逻辑代码), `*.mdtc`(反编译的类java代码).
 
 ### 命令行参数
 
@@ -13,19 +13,23 @@ Version: `1.2`
 - `-i, --file <文件路径>`: 指定文件路径
 - `-o, --output <输出路径>`: 指定输出路径
 - `-oo, --open-out`: 编译后打开输出
-- `-gpc, --generate-prime-code <代码等级>`: 产生中间代码(硬链接前), 1接近ts, 2接近汇编
+- `-gpc, --generate-prime-code <代码等级>`: 产生中间代码
 
-### *查看这些示例快速开始*
+> ### 示例: 编译/反编译  
+> `java -jar mdtc.jar -i "sample_cases/testcase.mdtc" -f -v -gpc 2`  
+> `java -jar mdtc.jar -i "sample_cases/testcase.mdtcode" -f -v -gpc 2`  
+
+
+### *快速开始*
 - [钍堆防爆](sample_cases/failsafe_钍堆.mdtc)
 - [采矿逻辑-5单位max](sample_cases/mine%20u5.mdtc)
 
 
 ### TodoList
-- 完善代码检查/自动补全
 - 编写为游戏模组
 ---
 
-## 功能
+## 语法
 
 ### 0.注释与标签
 ```githubexpressionlanguage

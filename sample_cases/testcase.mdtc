@@ -1,3 +1,7 @@
-::Test cases
-x=1+(-1)-(-x0)
-y=-1145+b2
+r=link(i)
+mid.6=pack(r,g,b,a)
+g=block(unit(item(mid.2)))*mid.6
+b=uradar().target(enemy)===liquid(team(LookupIndex))
+x=b1.sensor(@lead)+uradar(t5).target(player,ground).order(0).sort(maxHealth)
+c1.read(bit2)=a.orElse(b).when(x!=0)
+y=mid.2.orElse(c).when(r!=0)

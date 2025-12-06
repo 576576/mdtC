@@ -1,13 +1,12 @@
 public class CodeFormatter {
     /**
      * 主代码格式化函数入口
-     *
      */
     public static String format(String codeBlock) {
         final String[] keysStart = {"do{", "for(", "if(", "else{", "repeat(", "function "};
         final String[] keysEnd = {"}"};
-
         final String[] lines = codeBlock.split("\n");
+
         int matchIndex = 0;
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < lines.length; i++) {
@@ -40,6 +39,18 @@ public class CodeFormatter {
             sb.append("\t".repeat(matchIndex)).append("}\n");
         }
 
+        return sb.toString().trim();
+    }
+
+    /**
+     * 代码去格式化(去除空行及trim)
+     */
+    public static String deformat(String codeBlock) {
+        StringBuilder sb = new StringBuilder();
+        for (String line : codeBlock.split("\n")) {
+            if (!line.isBlank())
+                sb.append(line.trim()).append("\n");
+        }
         return sb.toString().trim();
     }
 }
