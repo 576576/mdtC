@@ -166,7 +166,9 @@ public class CodeDecompiler {
 
             put("jump ", s -> {
                 String[] params = s.split(" ", 2);
-                return String.format("jump(%s).when(%s)", params[0], Utils.reduceCondition(params[1]));
+                String condition = Utils.reduceCondition(params[1]);
+                condition = condition.equals("0==0") ? "" : ".when(" + condition + ")";
+                return String.format("jump(%s)%s", params[0], condition);
             });
 
             put("control ", s -> {
