@@ -8,6 +8,7 @@ public class Tests {
 //        println(Utils.bracketPartSplit("7,min(8,9)"));
 //        println(CodeCompiler.convertCodeLine(
 //                stdCodeStream.of("s=min(2+3,5)")));
+        println(Utils.stringSplit("(4<<6)-(7&2)"));
     }
 
     static String unfold(List<String> list) {

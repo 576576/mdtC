@@ -282,7 +282,7 @@ public class CodeDecompiler {
                 target = Utils.reduceParams("any", 3, params[0], params[1], params[2]);
 
                 result += "=uradar()";
-                if (!target.isEmpty()) result += ".target(" + target + ")";
+                if (!target.isEmpty() && !target.equals("enemy")) result += ".target(" + target + ")";
                 if (!order.equals("1")) result += ".order(" + order + ")";
                 if (!sort.equals("distance")) result += ".sort(" + sort + ")";
 
@@ -296,7 +296,7 @@ public class CodeDecompiler {
 
                 if (block.equals("@this")) block = "";
                 result += "=uradar(" + block + ")";
-                if (!target.isEmpty()) result += ".target(" + target + ")";
+                if (!target.isEmpty() && !target.equals("enemy")) result += ".target(" + target + ")";
                 if (!order.equals("1")) result += ".order(" + order + ")";
                 if (!sort.equals("distance")) result += ".sort(" + sort + ")";
 
@@ -332,15 +332,33 @@ public class CodeDecompiler {
 
         for (int i = bashList.size() - 1; i > 0; i--) {
             String line = bashList.get(i);
-            List<String> parts = Utils.stringSplit(line);
+            List<String> parts = Utils.stringSplitPro(line);
 
+            String op0, op1, op2;
             for (String midVar : parts) {
                 if (midVar.matches("mid\\.\\d+")) {
                     for (int j = i - 1; j >= 0; j--) {
                         String assignLine = bashList.get(j);
                         if (assignLine.startsWith(midVar + "=")) {
                             String value = assignLine.substring(midVar.length() + 1).trim();
-                            parts.replaceAll(part -> part.equals(midVar) ? value : part);
+                            List<String> parts2 = Utils.stringSplitPro(value);
+                            int replaceIndex = parts.indexOf(midVar);
+                            if (replaceIndex == -1) continue;
+
+                            boolean bracketTo = false;
+                            if (parts2.size() > 2) {
+                                op0 = parts2.get(1);
+                                op1 = parts.get(replaceIndex - 1);
+                                if (replaceIndex > 1 && replaceIndex < parts.size() - 1) {
+                                    op2 = parts.get(replaceIndex + 1);
+                                    bracketTo = Utils.isLowPriority(op0, op1, op2);
+                                } else if (replaceIndex == parts.size() - 1) {
+                                    bracketTo = Utils.isLowPriority(op0, op1);
+                                }
+                            }
+
+                            boolean finalBracketTo = bracketTo;
+                            parts.replaceAll(part -> part.equals(midVar) ? (finalBracketTo ? ("(" + value + ")") : value) : part);
                             bashList.set(i, String.join("", parts));
                             bashList.remove(j);
                             break;

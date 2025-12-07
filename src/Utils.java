@@ -19,8 +19,7 @@ public class Utils {
             } catch (IOException ex) {
                 printError("Unable to create file: " + ex.getMessage());
             }
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             printError("Unable to read file: " + e.getMessage());
         }
         return "";
@@ -78,7 +77,7 @@ public class Utils {
         return reduceParams(defaultParam, paramString);
     }
 
-    static String reduceParams(String defaultParam,int paramNum, String... params) {
+    static String reduceParams(String defaultParam, int paramNum, String... params) {
         params = Arrays.copyOf(params, paramNum);
         for (int i = 0; i < params.length; i++)
             if (params[i] == null) params[i] = defaultParam;
@@ -134,6 +133,7 @@ public class Utils {
      */
     public static List<String> stringSplit(String str) {
         final List<Character> keysSplit = List.of(',', ';');
+        final Set<String> reducedOpSet = Constants.reducedOpSet;
         ArrayList<String> tokens = new ArrayList<>();
         StringBuilder token = new StringBuilder();
 
@@ -146,7 +146,7 @@ public class Utils {
                 continue;
             }
             boolean isOperator = false;
-            for (Operator o : Operator.values()) {
+            for (Constants.Operator o : Constants.Operator.values()) {
                 if (str.startsWith(o.value, i)) {
                     if (!token.toString().trim().isEmpty()) {
                         tokens.add(token.toString().trim());
@@ -164,7 +164,7 @@ public class Utils {
             tokens.add(token.toString().trim());
 
         for (int i = 1; i < tokens.size(); i++) {
-            if ((i == 1 || Constants.operatorKeyMap.containsKey(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
+            if ((i == 1 || reducedOpSet.contains(tokens.get(i - 2))) && tokens.get(i - 1).equals("-")) {
                 if (isNumeric(tokens.get(i))) {
                     tokens.set(i, "-" + tokens.get(i));
                     tokens.remove(i - 1);
@@ -362,7 +362,7 @@ public class Utils {
         List<String> output = new ArrayList<>();
         Stack<String> operators = new Stack<>();
         for (String token : tokens) {
-            if (Operator.isOperator(token)) {
+            if (Constants.Operator.isOperator(token)) {
                 if (token.equals("(")) {
                     operators.push(token);
                 } else if (token.equals(")")) {
@@ -373,7 +373,7 @@ public class Utils {
                         operators.pop();
                     }
                 } else {
-                    while (!operators.empty() && !operators.peek().equals("(") && Operator.cmp(token, operators.peek()) <= 0) {
+                    while (!operators.empty() && !operators.peek().equals("(") && Constants.Operator.cmp(token, operators.peek()) <= 0) {
                         output.add(operators.pop());
                     }
                     operators.push(token);
@@ -407,59 +407,12 @@ public class Utils {
         }
     }
 
-    /**
-     * 处理运算符的优先级
-     * 括号最高, 指数次之, 乘除位移再次之, 加减再次之, 比较垫底
-     *
-     */
-    enum Operator {
-        ADD("+", 4), SUBTRACT("-", 4),
-        MULTIPLY("*", 5), INTEGER_DIVIDE("//", 5),
-        DIVIDE("/", 5), PERCENTAGE_MODULO("%%", 5),
-        MODULO("%", 5), EXPONENT(".^", 7),
-        STRICT_EQUALS("===", 3), EQUALS("==", 3),
-        NOT_EQUALS("!=", 3), LOGICAL_AND("&&", 2),
-        GREATER_THAN_OR_EQUAL_TO(">=", 3), LESS_THAN_OR_EQUAL_TO("<=", 3),
-        UNSIGNED_RIGHT_SHIFT(">>>", 5), RIGHT_SHIFT(">>", 5),
-        LEFT_SHIFT("<<", 5), BITWISE_XOR("^", 2),
-        GREATER_THAN(">", 3), LESS_THAN("<", 3),
-        AND("&", 2), OR("|", 2),
-        LEFT_BRACKET("(", 10), RIGHT_BRACKET(")", 10),
-        ASSIGN("=", 1);
-
-
-        final String value;
-        final int priority;
-
-        Operator(String value, int priority) {
-            this.value = value;
-            this.priority = priority;
+    static boolean isLowPriority(String op0, String... ops) {
+        int p0 = Constants.Operator.getPriority(op0);
+        for (String op : ops) {
+            int p = Constants.Operator.getPriority(op);
+            if (p >= p0) return true;
         }
-
-        /**
-         * 比较两个符号的优先级
-         *
-         * @return c1的优先级是否比c2的高，高则返回正数，等于返回0，小于返回负数
-         */
-        public static int cmp(String c1, String c2) {
-            int p1 = 0, p2 = 0;
-            for (Operator o : Operator.values()) {
-                if (o.value.equals(c1)) p1 = o.priority;
-                if (o.value.equals(c2)) p2 = o.priority;
-            }
-            return p1 - p2;
-        }
-
-        /**
-         * 枚举出来的才视为运算符，用于扩展
-         *
-         * @return 运算符合法性
-         */
-        public static boolean isOperator(String c) {
-            for (Operator o : Operator.values()) {
-                if (o.value.equals(c)) return true;
-            }
-            return false;
-        }
+        return false;
     }
 }

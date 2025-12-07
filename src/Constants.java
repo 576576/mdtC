@@ -1,6 +1,4 @@
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class Constants {
@@ -92,6 +90,72 @@ public class Constants {
         put("rbracket", ")");
         put("always", "==");
     }};
+    final static Set<String> reducedOpSet = new HashSet<>(Constants.operatorKeyMap.keySet()) {{
+        List.of("(", ")", "=").forEach(this::remove);
+    }};
 
     final static List<String> supportFormats = List.of(".mdtc", ".mdtcode", ".libmdtc");
+
+    /**
+     * 处理运算符的优先级
+     * 括号最高, 指数次之, 乘除位移再次之, 加减再次之, 比较垫底
+     *
+     */
+    enum Operator {
+        ADD("+", 4), SUBTRACT("-", 4),
+        MULTIPLY("*", 5), INTEGER_DIVIDE("//", 5),
+        DIVIDE("/", 5), PERCENTAGE_MODULO("%%", 5),
+        MODULO("%", 5), EXPONENT(".^", 7),
+        STRICT_EQUALS("===", 3), EQUALS("==", 3),
+        NOT_EQUALS("!=", 3), LOGICAL_AND("&&", 2),
+        GREATER_THAN_OR_EQUAL_TO(">=", 3), LESS_THAN_OR_EQUAL_TO("<=", 3),
+        UNSIGNED_RIGHT_SHIFT(">>>", 5), RIGHT_SHIFT(">>", 5),
+        LEFT_SHIFT("<<", 5), BITWISE_XOR("^", 2),
+        GREATER_THAN(">", 3), LESS_THAN("<", 3),
+        AND("&", 2), OR("|", 2),
+        LEFT_BRACKET("(", 10), RIGHT_BRACKET(")", 10),
+        ASSIGN("=", 1);
+
+
+        final String value;
+        final int priority;
+
+        Operator(String value, int priority) {
+            this.value = value;
+            this.priority = priority;
+        }
+
+        /**
+         * 比较两个符号的优先级
+         *
+         * @return c1的优先级是否比c2的高，高则返回正数，等于返回0，小于返回负数
+         */
+        public static int cmp(String c1, String c2) {
+            int p1 = 0, p2 = 0;
+            for (Operator o : Operator.values()) {
+                if (o.value.equals(c1)) p1 = o.priority;
+                if (o.value.equals(c2)) p2 = o.priority;
+            }
+            return p1 - p2;
+        }
+
+        /**
+         * 枚举出来的才视为运算符，用于扩展
+         *
+         * @return 运算符合法性
+         */
+        public static boolean isOperator(String c) {
+            for (Operator o : Operator.values()) {
+                if (o.value.equals(c)) return true;
+            }
+            return false;
+        }
+
+        public static int getPriority(String c) {
+            for (Operator o : Operator.values()) {
+                if (o.value.equals(c)) return o.priority == 10 ? 0 : o.priority;
+            }
+            return 11;
+        }
+    }
 }
