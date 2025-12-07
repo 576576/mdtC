@@ -1,4 +1,4 @@
-import org.apache.commons.cli.*;
+import picocli.CommandLine;
 
 public class Main {
     private static final String VERSION_TAG = "1.31";
@@ -10,31 +10,20 @@ public class Main {
     static int primeCodeLevel = 0;
 
     static void main(String[] args) {
-        if (args.length != 0 && Constants.supportFormats.contains(args[0]))
-            filePath = args[0];
+        // 调用 CliHelper 来解析命令行参数
+        CliHelper cliHelper = new CliHelper();
+         CommandLine cmd = new CommandLine(cliHelper);
+         cmd.parseArgs(args);
 
-        Options options = new Options()
-                .addOption("v", "version", false, "显示版本信息")
-                .addOption("f", "format", false, "格式化代码")
-                .addOption("fo", "format-only", false, "仅格式化代码")
-                .addOption("i", "file", true, "指定文件路径")
-                .addOption("o", "output", true, "指定输出路径")
-                .addOption("oo", "open-out", false, "编译后打开输出")
-                .addOption("gpc", "generate-prime-code", true, "产生中间代码(硬链接前)");
+        // 设置从 CliHelper 获取的参数值
+        isToFormat = cliHelper.isToFormat;
+        isFormatOnly = cliHelper.isFormatOnly;
+        filePath = cliHelper.filePath;
+        outPath = cliHelper.outPath;
+        isOpenOutput = cliHelper.isOpenOutput;
+        primeCodeLevel = cliHelper.primeCodeLevel;
 
-        CommandLineParser parser = new DefaultParser();
-        try {
-            CommandLine cmd = parser.parse(options, args);
-            if (cmd.hasOption("v")) IO.println("MdtC Compiler v" + Main.VERSION_TAG);
-            isToFormat = cmd.hasOption("f");
-            isFormatOnly = cmd.hasOption("fo");
-            if (cmd.hasOption("i")) filePath = cmd.getOptionValue("i");
-            if (cmd.hasOption("o")) outPath = cmd.getOptionValue("o");
-            isOpenOutput = cmd.hasOption("oo");
-            if (cmd.hasOption("gpc")) primeCodeLevel = Integer.parseInt(cmd.getOptionValue("gpc"));
-        } catch (ParseException e) {
-            System.err.println("解析命令行参数失败: " + e.getMessage());
-        }
+        if (cliHelper.versionInfo) IO.println("MdtC Compiler v" + Main.VERSION_TAG);
 
         if (filePath.isEmpty())
             filePath = IO.readln("Enter input file path below.\n> ");
@@ -49,7 +38,7 @@ public class Main {
             compileFile(filePath, outPath);
         else if (filePath.endsWith(".mdtcode"))
             decompileFile(filePath, outPath);
-        else Utils.printError("Not supported formats(.mdtc, .mdtcode, .libmdtc).\n> " + filePath);
+        else Utils.printError("Unsupported formats(.mdtc, .mdtcode, .libmdtc).\n> " + filePath);
     }
 
     static void formatFile(String filePath, String outPath) {

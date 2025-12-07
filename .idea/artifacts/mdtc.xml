@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="MDTC">
+    <output-path>$PROJECT_DIR$/out/artifacts/MDTC</output-path>
+    <root id="archive" name="mdtc.jar">
+      <element id="module-output" name="Mindustry-logic-generator" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/lib/commons-cli-1.10.0.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
