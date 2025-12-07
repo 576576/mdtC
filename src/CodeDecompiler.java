@@ -160,7 +160,32 @@ public class CodeDecompiler {
             put("wait ", s -> "wait(" + s + ")");
 
             put("ubind ", s -> "ubind(" + s + ")");
-            put("ucontrol ", s -> "uctrl(" + s.replace(" 0", "").replace(' ', ',') + ")");
+            put("ucontrol ", s -> {
+                final List<String> ctrlTypes = List.of("target", "targetp");
+
+                String[] params = s.split(" ", 2);
+                String ctrlType = params[0], target = params[1], target2 = "";
+
+                if (!ctrlTypes.contains(ctrlType)) {
+                    ctrlType = "uctrl";
+                    target = Utils.reduceParams("0", params[0], target);
+                } else {
+                    params = target.split(" ");
+                    if (ctrlType.equals("targetp")) {
+                        ctrlType = "ushoot";
+                        target = params[1];
+                        if (target.equals("1")) target = "";
+                        target2 = ".target(" + params[0] + ")";
+                    } else if (ctrlType.equals("target")) {
+                        ctrlType = "ushoot";
+                        target = params[2];
+                        if (target.equals("1")) target = "";
+                        target2 = ".target(" + String.join(",", params[0], params[1]) + ")";
+                    } else target = params[0];
+                }
+
+                return String.format("%s(%s)%s", ctrlType, target, target2);
+            });
 
             put("draw ", s -> "draw(" + Utils.reduceParams("0", s) + ")");
 
@@ -178,8 +203,8 @@ public class CodeDecompiler {
                 String block = params[1], ctrlType = params[0], target = params[2], target2 = "";
 
                 if (!ctrlTypes.contains(ctrlType)) {
-                    ctrlType = "uctrl";
-                    target = Utils.reduceParams("0", ctrlType, target);
+                    ctrlType = "ctrl";
+                    target = Utils.reduceParams("0", params[0], target);
                 } else {
                     if (ctrlType.equals("enabled"))
                         ctrlType = "enable";
@@ -187,10 +212,12 @@ public class CodeDecompiler {
                     if (ctrlType.equals("shootp")) {
                         ctrlType = "shoot";
                         target = params[1];
-                        target2 = ".to(" + params[0] + ")";
+                        if (target.equals("1")) target = "";
+                        target2 = ".target(" + params[0] + ")";
                     } else if (ctrlType.equals("shoot")) {
                         target = params[2];
-                        target2 = ".to(" + String.join(",", params[0], params[1]) + ")";
+                        if (target.equals("1")) target = "";
+                        target2 = ".target(" + String.join(",", params[0], params[1]) + ")";
                     } else target = params[0];
                 }
 
@@ -368,6 +395,28 @@ public class CodeDecompiler {
                     }
                     break;
                 }
+            }
+        }
+
+        for (int i = bashList.size() - 1; i > 0; i--) {
+            String line = bashList.get(i);
+            List<String> parts = Utils.stringSplitPro(line);
+            if (parts.size() > 2) {
+                String key = parts.get(1) + parts.get(2);
+                if (!Constants.dotCtrlCodes.contains(key)) continue;
+                String block = parts.getFirst();
+
+                String line2 = bashList.get(i - 1);
+                List<String> parts2 = Utils.stringSplitPro(line2);
+                String block2 = parts2.getFirst();
+                if (!block.equals(block2)) continue;
+                if (parts2.size() < 3) continue;
+                String key2 = parts2.get(1) + parts2.get(2);
+                if (!Constants.dotCtrlCodes.contains(key2)) continue;
+
+                String value = line.substring(block.length());
+                bashList.set(i - 1, line2 + value);
+                bashList.remove(i);
             }
         }
 

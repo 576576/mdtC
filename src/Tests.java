@@ -5,10 +5,7 @@ public class Tests {
      * 集合的部分测试类
      */
     static void main() {
-//        println(Utils.bracketPartSplit("7,min(8,9)"));
-//        println(CodeCompiler.convertCodeLine(
-//                stdCodeStream.of("s=min(2+3,5)")));
-        println(Utils.stringSplit("(4<<6)-(7&2)"));
+        println(Utils.stringSplit("x=1+(-1)-(-x0)"));
     }
 
     static String unfold(List<String> list) {

@@ -1,7 +1,3 @@
-op add mid.1 5 3
-op sub mid.2 2 8
-op mul mid.3 mid.1 mid.2
-op shl mid.4 4 6
-op and mid.5 7 2
-op sub mid.6 mid.4 mid.5
-op idiv g mid.3 mid.6
+op add mid.1 1 -1
+op sub mid.2 0 x0
+op sub x mid.1 mid.2

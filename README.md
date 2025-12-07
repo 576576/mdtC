@@ -214,8 +214,10 @@ repeat对代码段多次重复
 等价的1D数组实现, 嵌套即可实现n维数组
 ```githubexpressionlanguage
 ::repeat和import使用示例
+::此处导入了example.libmdtc
 import sample_cases/modules/example
 
+::变量将以flag1-flag3命名
 repeat(flag,3){
 	flag=simpleFlag(5)
 }

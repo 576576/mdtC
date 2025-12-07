@@ -708,10 +708,10 @@ public class CodeCompiler {
                 if (!op.equals("set")) {
                     String arg1 = stack.get(stack.size() - 2), arg2 = stack.getLast();
                     String result = String.join(" ", "op", op, midVar, arg1, arg2);
-//                    if (op.equals("sub")) {
-//                        if (arg1.equals("0") && Utils.isNumeric(arg2))
-//                            result = "set " + midVar + " -" + arg2;
-//                    }
+                    if (op.equals("sub")) {
+                        if (arg1.equals("0") && Utils.isNumeric(arg2))
+                            result = "set " + midVar + " -" + arg2;
+                    }
                     bashList.add(result);
                     stack.removeLast();
                     stack.removeLast();
@@ -908,8 +908,8 @@ public class CodeCompiler {
             } else IO.println("Skip writing prime code.");
         }
 
+        Utils.removeSpareTags(bashList);
         if (!bashList.isEmpty()) {
-            Utils.removeSpareTags(bashList);
             bashList.add(bashList.size() - 1, "::END");
             if (bashList.getLast().startsWith("::"))
                 bashList.add("end");

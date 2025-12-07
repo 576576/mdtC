@@ -218,7 +218,7 @@ public class Utils {
             }
             if (token_now.equals("(")) {
                 token_dot = tokens.get(i - 1);
-                for (var key : Constants.dotCodes.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
+                for (var key : Constants.dotCodesAll.stream().map(s -> s.substring(0, s.length() - 1)).toList()) {
                     if (token_dot.endsWith(key) && !token_dot.equals(key)) {
                         tokens.remove(i - 1);
                         tokens.add(i - 1, key);

@@ -1,11 +1,15 @@
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Constants {
     final static Pattern NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
     final static List<String> dotCtrlCodes = List.of(".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
             ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write(");
     final static List<String> dotCodes = List.of(".sensor(", ".read(", ".orElse(");
+    final static List<String> dotCodesAll = Stream.concat(dotCtrlCodes.stream(), dotCodes.stream())
+            .collect(Collectors.toList());
     final static List<String> ctrlCodes = List.of("print(", "printchar(", "format(", "wait(", "stop(",
             "end(", "ubind(", "uctrl(", "ushoot(", "jump(", "jump2(", "printf(", "tag(", "raw(");
     final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
@@ -91,7 +95,7 @@ public class Constants {
         put("always", "==");
     }};
     final static Set<String> reducedOpSet = new HashSet<>(Constants.operatorKeyMap.keySet()) {{
-        List.of("(", ")", "=").forEach(this::remove);
+        List.of(")", "=").forEach(this::remove);
     }};
 
     final static List<String> supportFormats = List.of(".mdtc", ".mdtcode", ".libmdtc");
