@@ -1,13 +1,28 @@
 import picocli.CommandLine;
+import java.io.InputStream;
+import java.util.Properties;
 
 public class Main {
-    private static final String VERSION_TAG = "1.31";
+    private static final String VERSION_TAG;
     static boolean isToFormat;
     static boolean isFormatOnly;
     static boolean isOpenOutput;
     static String filePath = "";
     static String outPath = "";
     static int primeCodeLevel = 0;
+
+    static {
+        Properties prop = new Properties();
+        try (InputStream input = Main.class.getClassLoader().getResourceAsStream("version.properties")) {
+            if (input == null) {
+                throw new RuntimeException("Unable to find version.properties");
+            }
+            prop.load(input);
+            VERSION_TAG = prop.getProperty("version");
+        } catch (Exception e) {
+            throw new RuntimeException("Error loading version properties", e);
+        }
+    }
 
     static void main(String[] args) {
         CliHelper cliHelper = new CliHelper();
@@ -21,7 +36,7 @@ public class Main {
         isOpenOutput = cliHelper.isOpenOutput;
         primeCodeLevel = cliHelper.primeCodeLevel;
 
-        if (cliHelper.versionInfo) IO.println("MdtC Compiler v" + Main.VERSION_TAG);
+        if (cliHelper.versionInfo) IO.println("MdtC Compiler v" + VERSION_TAG);
 
         if (filePath.isEmpty())
             filePath = IO.readln("Enter input file path below.\n> ");
