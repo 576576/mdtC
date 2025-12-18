@@ -10,12 +10,10 @@ public class Main {
     static int primeCodeLevel = 0;
 
     static void main(String[] args) {
-        // 调用 CliHelper 来解析命令行参数
         CliHelper cliHelper = new CliHelper();
-         CommandLine cmd = new CommandLine(cliHelper);
-         cmd.parseArgs(args);
+        CommandLine cmd = new CommandLine(cliHelper);
+        cmd.parseArgs(args);
 
-        // 设置从 CliHelper 获取的参数值
         isToFormat = cliHelper.isToFormat;
         isFormatOnly = cliHelper.isFormatOnly;
         filePath = cliHelper.filePath;
@@ -31,6 +29,10 @@ public class Main {
             Utils.printError("No input file is detected.");
             return;
         }
+        if (!Constants.supportFormats.contains(filePath.substring(filePath.lastIndexOf(".")))) {
+            Utils.printError("Unsupported formats(.mdtc, .mdtcode, .libmdtc).\n> " + filePath);
+            return;
+        }
 
         if (filePath.endsWith(".libmdtc") || isFormatOnly)
             formatFile(filePath, outPath);
@@ -38,7 +40,6 @@ public class Main {
             compileFile(filePath, outPath);
         else if (filePath.endsWith(".mdtcode"))
             decompileFile(filePath, outPath);
-        else Utils.printError("Unsupported formats(.mdtc, .mdtcode, .libmdtc).\n> " + filePath);
     }
 
     static void formatFile(String filePath, String outPath) {
@@ -87,7 +88,6 @@ public class Main {
         Utils.writeFile(outPath, outContent);
         IO.println("Decompiled output at:\n> " + outPath);
 
-        if (isToFormat) formatFile(outPath, outPath);
         if (isOpenOutput) Utils.openWithExplorer(outPath);
     }
 }

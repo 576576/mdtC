@@ -1,3 +1,12 @@
-op add mid.1 1 -1
-op sub mid.2 0 x0
-op sub x mid.1 mid.2
+::TAG.1_do
+set 1 1
+jump TAG.1_do always 0 0
+jump TAG.5 always 0 0
+jump TAG.5 always 0 0
+jump TAG.5 always 0 0
+jump TAG.6 always 0 0
+set e 1
+::TAG.6
+set e 2
+::TAG.5
+set e 3

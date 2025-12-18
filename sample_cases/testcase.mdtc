@@ -1,1 +1,12 @@
-x=1+(-1)-(-x0)
+do{
+	1=1
+}while(always)
+jump(TAG.5)
+jump(TAG.5)
+jump(TAG.5)
+jump(TAG.2)
+e=1
+::TAG.2
+e=2
+::TAG.5
+e=3

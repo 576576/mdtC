@@ -5,11 +5,12 @@ public class Tests {
      * 集合的部分测试类
      */
     static void main() {
-        println(Utils.stringSplit("x=1+(-1)-(-x0)"));
+        println(Utils.stringSplit("2>=3<3"));
+        IO.println(Utils.isNumeric("-1"));
     }
 
     static String unfold(List<String> list) {
-        return Utils.stringBlockOf(list) + "\n--------\n";
+        return stringTableOf(list) + "\n--------\n";
     }
 
     static void println(String str) {
@@ -22,5 +23,9 @@ public class Tests {
 
     static void println(stdCodeStream stream) {
         IO.println(unfold(stream.toList()));
+    }
+
+    static String stringTableOf(List<String> bashList) {
+        return bashList.stream().reduce("", (a, b) -> a + "\t" + b).trim();
     }
 }

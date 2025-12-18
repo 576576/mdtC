@@ -24,8 +24,10 @@ public class CodeDecompiler {
 
         stdCodeStream result_code = convertCode(result_jump);
         stdCodeStream result_fold = simplifyCode(result_code);
+        stdCodeStream result_jump2 = convertJump2(result_fold);
 
-        return convertJump2(result_fold).toString().trim();
+        String result_format = !Main.isToFormat ? result_jump2.toString() : CodeFormatter.format(result_jump2.toString());
+        return result_format.trim();
     }
 
     /**
@@ -82,7 +84,7 @@ public class CodeDecompiler {
             }
             for (int i = 0; i < bashList.size(); i++) {
                 String line = bashList.get(i);
-                if (line.startsWith("jump " + tagTo)) {
+                if (line.startsWith("jump " + tagTo + " ")) {
                     if (ignoreLines.contains(line)) continue;
                     line2Index = i;
                     line2 = line;
@@ -97,7 +99,7 @@ public class CodeDecompiler {
 
             final List<String> keysStart = List.of("if(", "do{");
             int matchIndex = 0;
-            if (lineIndex < line2Index) {
+            if (lineIndex < line2Index) { //do-while
                 o:
                 for (int i = lineIndex; i < line2Index; i++) {
                     String line = bashList.get(i);
@@ -117,7 +119,7 @@ public class CodeDecompiler {
                 String condition = Utils.reduceCondition(line2.split(" ", 3)[2]);
                 bashList.add(lineIndex, "do{");
                 bashList.set(line2Index + 1, "}while(" + condition + ")");
-            } else {
+            } else { //if
                 o:
                 for (int i = line2Index; i < lineIndex; i++) {
                     String line = bashList.get(i);
@@ -135,6 +137,10 @@ public class CodeDecompiler {
                 }
 
                 String condition = Utils.reduceCondition(Utils.reverseCondition(line2.split(" ", 3)[2]));
+                if (condition.equals("never")) {
+                    ignoreLines.add(line2);
+                    continue;
+                }
                 bashList.add(lineIndex, "}");
                 bashList.set(line2Index, "if(" + condition + "){");
             }
@@ -190,9 +196,10 @@ public class CodeDecompiler {
             put("draw ", s -> "draw(" + Utils.reduceParams("0", s) + ")");
 
             put("jump ", s -> {
+                final List<String> alwaysConditions = List.of("0==0", "always");
                 String[] params = s.split(" ", 2);
                 String condition = Utils.reduceCondition(params[1]);
-                condition = condition.equals("0==0") ? "" : ".when(" + condition + ")";
+                condition = alwaysConditions.contains(condition) ? "" : ".when(" + condition + ")";
                 return String.format("jump(%s)%s", params[0], condition);
             });
 
@@ -268,10 +275,10 @@ public class CodeDecompiler {
                 String[] params = s.split(" ");
                 String operator = params[0], result = params[1], paramString;
 
-                final Map<String, String> operatorMap = Constants.operatorValueMap;
+                final Map<String, String> operatorMap = Constants.midOpValueMap;
 
                 if (operatorMap.containsKey(operator)) {
-                    return String.format("%s=%s%s%s", result, params[2], operatorMap.get(operator), params[3]);
+                    return String.format("%s=%s %s %s", result, params[2], operatorMap.get(operator), params[3]);
                 } else if (operator.equals("logn") && params[4].equals("2")) {
                     operator = "lb";
                     paramString = params[2];
@@ -361,7 +368,7 @@ public class CodeDecompiler {
 
         for (int i = bashList.size() - 1; i > 0; i--) {
             String line = bashList.get(i);
-            List<String> parts = Utils.stringSplitPro(line);
+            List<String> parts = Utils.stringSplit(line);
 
             String op0, op1, op2;
             for (String midVar : parts) {
@@ -370,15 +377,16 @@ public class CodeDecompiler {
                         String assignLine = bashList.get(j);
                         if (assignLine.startsWith(midVar + "=")) {
                             String value = assignLine.substring(midVar.length() + 1).trim();
-                            List<String> parts2 = Utils.stringSplitPro(value);
+                            List<String> parts2 = Utils.stringSplit(value);
                             int replaceIndex = parts.indexOf(midVar);
                             if (replaceIndex == -1) continue;
 
                             boolean bracketTo = false;
                             if (parts2.size() > 2) {
                                 op0 = parts2.get(1);
+                                if (replaceIndex < 1) continue;
                                 op1 = parts.get(replaceIndex - 1);
-                                if (replaceIndex > 1 && replaceIndex < parts.size() - 1) {
+                                if (replaceIndex < parts.size() - 1) {
                                     op2 = parts.get(replaceIndex + 1);
                                     bracketTo = Utils.isLowPriority(op0, op1, op2);
                                 } else if (replaceIndex == parts.size() - 1) {
@@ -388,7 +396,7 @@ public class CodeDecompiler {
 
                             boolean finalBracketTo = bracketTo;
                             parts.replaceAll(part -> part.equals(midVar) ? (finalBracketTo ? ("(" + value + ")") : value) : part);
-                            bashList.set(i, String.join("", parts));
+                            bashList.set(i, String.join(" ", parts));
                             bashList.remove(j);
                             break;
                         }
@@ -400,14 +408,14 @@ public class CodeDecompiler {
 
         for (int i = bashList.size() - 1; i > 0; i--) {
             String line = bashList.get(i);
-            List<String> parts = Utils.stringSplitPro(line);
+            List<String> parts = Utils.stringSplit(line);
             if (parts.size() > 2) {
                 String key = parts.get(1) + parts.get(2);
                 if (!Constants.dotCtrlCodes.contains(key)) continue;
                 String block = parts.getFirst();
 
                 String line2 = bashList.get(i - 1);
-                List<String> parts2 = Utils.stringSplitPro(line2);
+                List<String> parts2 = Utils.stringSplit(line2);
                 String block2 = parts2.getFirst();
                 if (!block.equals(block2)) continue;
                 if (parts2.size() < 3) continue;

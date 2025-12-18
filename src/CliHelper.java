@@ -15,14 +15,14 @@ public class CliHelper {
     boolean isFormatOnly;
 
     @Option(names = {"-i", "--file"}, paramLabel = "<file>", description = "指定文件路径")
-    String filePath;
+    String filePath="";
 
     @Option(names = {"-o", "--output"}, paramLabel = "<output>", description = "指定输出路径")
-    String outPath;
+    String outPath="";
 
     @Option(names = {"-oo", "--open-out"}, description = "编译后打开输出")
     boolean isOpenOutput;
 
-    @Option(names = {"-gpc", "--generate-prime-code"}, paramLabel = "<level>", description = "产生中间代码(硬链接前)")
+    @Option(names = {"-gpc", "--generate-prime-code"}, paramLabel = "<level>", description = "产生中间代码")
     int primeCodeLevel;
 }

@@ -20,13 +20,18 @@ Version: `1.32`
 > `java -jar mdtc.jar -i "sample_cases/testcase.mdtcode" -f -v -gpc 2`  
 
 
-### *快速开始*
-- [钍堆防爆](sample_cases/failsafe_钍堆.mdtc)
-- [采矿逻辑-5单位max](sample_cases/mine%20u5.mdtc)
+### *样例*  
+#### 从`.mdtc`编译:
+- [钍堆防爆](sample_cases/failsafe_钍堆.mdtcode)
+- [采矿逻辑-5单位max](sample_cases/mine%20u5.mdtcode)
+#### 从`.mdtcode`反编译:
+- [智能装卸-最终版-旧](sample_cases/智能装卸.mdtc)
 
 
 ### TodoList
 - 编写为游戏模组
+  - 用户界面编写
+  - 物品名表自动导入
 ---
 
 ## 语法
@@ -43,12 +48,13 @@ tag(这也是标签,而且是全局标签)
 
 
 ### 1. 赋值与计算
+> 特别的, 减号应用.-表示 (-为连字符,加以区分), 但负数直接书写 (eg.`-x0`)
 ```githubexpressionlanguage
 ::赋值
 x0="Hello World"
 
 ::计算
-x=1+(-1)-(-x0)*4/5//6%7%%8.^9
+x=1+(-1).-(-x0)*4/5//6%7%%8.^9
 y=1==(2!=3)&&4<5<=6>7>=8===9
 z=1<<2>>3>>>4|5&6^7
 

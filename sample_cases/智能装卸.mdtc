@@ -1,0 +1,790 @@
+do{
+	print("[yellow]智卸[red]最终版[white]")
+	print("by [cyan]Nihil[white] 2024/2/18\n")
+	print("支持所有的工厂和兵厂及造兵相关的小构造\n")
+	print("可持续扩展支持的方块种类而无算力损耗\n")
+	print("连接所有待输入物品的建筑以及装卸器\n")
+	print("智能生成物品需求表，也可手动配置\n")
+	print("质驱逻辑部分参考了矿机的逻辑\n")
+	message1.pflush()
+	filling.percentage=1
+	do{
+		links=@links
+		unitcost=2
+		buildcost=2
+		copper=0
+		lead=0
+		lead.unit=0
+		metaglass=0
+		metaglass.unit=0
+		graphite=0
+		graphite.unit=0
+		sand=0
+		coal=0
+		coal.unit=0
+		titanium=0
+		titanium.unit=0
+		thorium=0
+		thorium.unit=0
+		thorium.build=0
+		scrap=0
+		silicon=0
+		silicon.unit=0
+		plastanium=0
+		plastanium.unit=0
+		phase-fabric=0
+		phase-fabric.unit=0
+		surge-alloy=0
+		surge-alloy.unit=0
+		spore-pod=0
+		blast-compound=0
+		pyratite=0
+		beryllium=0
+		beryllium.unit=0
+		beryllium.build=0
+		tungsten=0
+		tungsten.unit=0
+		tungsten.build=0
+		carbide=0
+		carbide.build=0
+		i=0
+		do{
+			::TAG.243
+			block=link(i)
+			jump(TAG.303).when(block==null)
+			i=i + 1
+			blocktype=block.sensor(@type)
+			id=blocktype.sensor(@id)
+			jump2(+ id)
+			jump(TAG.245)
+			jump(TAG.245)
+			jump(TAG.246)
+			jump(TAG.247)
+			jump(TAG.248)
+			jump(TAG.250)
+			jump(TAG.251)
+			jump(TAG.250)
+			jump(TAG.253)
+			jump(TAG.254)
+			jump(TAG.257)
+		}while(always)
+		jump(TAG.257)
+		jump(TAG.258)
+		jump(TAG.257)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.301)
+		jump(TAG.267)
+		jump(TAG.267)
+		jump(TAG.302)
+		jump(TAG.267)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.275)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.274)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.276)
+		jump(TAG.280)
+		jump(TAG.283)
+		jump(TAG.286)
+		jump(TAG.287)
+		jump(TAG.288)
+		jump(TAG.289)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.297)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.260)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.269)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.269)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.273)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.261)
+		jump(TAG.259)
+		jump(TAG.271)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.272)
+		jump(TAG.270)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.252)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.267)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.267)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.290)
+		jump(TAG.291)
+		jump(TAG.292)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.296)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.293)
+		jump(TAG.294)
+		jump(TAG.295)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.243)
+		jump(TAG.267)
+		jump(TAG.243)
+		::TAG.245
+		coal=coal + 10
+		jump(TAG.243)
+		::TAG.246
+		coal=coal + 5
+		sand=sand + 10
+		jump(TAG.243)
+		::TAG.247
+		coal=coal + 20
+		sand=sand + 30
+		pyratite=pyratite + 5
+		jump(TAG.243)
+		::TAG.248
+		lead=lead + 10
+		sand=sand + 10
+		jump(TAG.243)
+		::TAG.250
+		titanium=titanium + 10
+		jump(TAG.243)
+		::TAG.251
+		sand=sand + 20
+		thorium=thorium + 8
+		jump(TAG.243)
+		::TAG.252
+		sand=sand + 36
+		thorium=thorium + 12
+		jump(TAG.243)
+		::TAG.253
+		coal=coal + 5
+		lead=lead + 10
+		sand=sand + 10
+		jump(TAG.243)
+		::TAG.254
+		spore-pod=spore-pod + 10
+		pyratite=pyratite + 10
+		jump(TAG.243)
+		::TAG.257
+		ic=block.sensor(@itemCapacity)
+		scrap=scrap + ic
+		jump(TAG.243)
+		::TAG.258
+		spore-pod=spore-pod + 10
+		jump(TAG.243)
+		::TAG.259
+		copper=copper + 15
+		lead=lead + 20
+		titanium=titanium + 10
+		silicon=silicon + 15
+		jump(TAG.243)
+		::TAG.260
+		graphite=graphite + 7
+		sand=sand + 28
+		jump(TAG.243)
+		::TAG.261
+		beryllium=beryllium + 10
+		jump(TAG.243)
+		::TAG.267
+		phase-fabric=phase-fabric + 10
+		jump(TAG.243)
+		::TAG.269
+		graphite=graphite + 18
+		tungsten=tungsten + 12
+		jump(TAG.243)
+		::TAG.270
+		sand=sand + 10
+		jump(TAG.243)
+		::TAG.271
+		silicon=silicon + 20
+		jump(TAG.243)
+		::TAG.272
+		graphite=graphite + 10
+		jump(TAG.243)
+		::TAG.273
+		thorium=thorium + 20
+		jump(TAG.243)
+		::TAG.274
+		thorium=thorium + 30
+		jump(TAG.243)
+		::TAG.275
+		thorium=thorium + 10
+		jump(TAG.243)
+		::TAG.276
+		config=block.sensor(@config)
+		if(config==@dagger){
+			lead.unit=lead.unit + 10
+			silicon.unit=silicon.unit + 10
+		}
+		if(config==@nova){
+			silicon.unit=silicon.unit + 30
+			lead.unit=lead.unit + 20
+			titanium.unit=titanium.unit + 20
+		}
+		if(config==@crawler){
+			silicon.unit=silicon.unit + 8
+			coal.unit=coal.unit + 10
+		}
+		jump(TAG.243)
+		::TAG.280
+		config=block.sensor(@config)
+		if(config==@flare){
+			silicon.unit=silicon.unit + 15
+		}
+		if(config==@mono){
+			lead.unit=lead.unit + 15
+			silicon.unit=silicon.unit + 30
+		}
+		jump(TAG.243)
+		::TAG.283
+		config=block.sensor(@config)
+		if(config==@risso){
+			metaglass.unit=metaglass.unit + 35
+			silicon.unit=silicon.unit + 20
+		}
+		if(config==@retusa){
+			metaglass.unit=metaglass.unit + 25
+			silicon.unit=silicon.unit + 15
+			titanium.unit=titanium.unit + 20
+		}
+		jump(TAG.243)
+		::TAG.286
+		silicon.unit=silicon.unit + 40
+		graphite.unit=graphite.unit + 40
+		jump(TAG.243)
+		::TAG.287
+		silicon.unit=silicon.unit + 130
+		titanium.unit=titanium.unit + 80
+		metaglass.unit=metaglass.unit + 40
+		jump(TAG.243)
+		::TAG.288
+		silicon.unit=silicon.unit + 850
+		titanium.unit=titanium.unit + 750
+		plastanium.unit=plastanium.unit + 650
+		jump(TAG.243)
+		::TAG.289
+		silicon.unit=silicon.unit + 1000
+		plastanium.unit=plastanium.unit + 600
+		phase-fabric.unit=phase-fabric.unit + 350
+		surge-alloy.unit=surge-alloy.unit + 500
+		jump(TAG.243)
+		::TAG.290
+		beryllium.unit=beryllium.unit + 40
+		silicon.unit=silicon.unit + 50
+		jump(TAG.243)
+		::TAG.291
+		beryllium.unit=beryllium.unit + 50
+		silicon.unit=silicon.unit + 70
+		jump(TAG.243)
+		::TAG.292
+		graphite.unit=graphite.unit + 50
+		silicon.unit=silicon.unit + 70
+		jump(TAG.243)
+		::TAG.293
+		tungsten.unit=tungsten.unit + 30
+		silicon.unit=silicon.unit + 40
+		jump(TAG.243)
+		::TAG.294
+		tungsten.unit=tungsten.unit + 40
+		silicon.unit=silicon.unit + 50
+		jump(TAG.243)
+		::TAG.295
+		tungsten.unit=tungsten.unit + 40
+		silicon.unit=silicon.unit + 60
+		jump(TAG.243)
+		::TAG.296
+		silicon.unit=silicon.unit + 100
+		thorium.unit=thorium.unit + 80
+		jump(TAG.243)
+		::TAG.297
+		config=block.sensor(@config)
+		if(config==@beryllium-wall-large){
+			beryllium.build=beryllium.build + 24
+		}
+		if(config==@tungsten-wall-large){
+			tungsten.build=tungsten.build + 24
+		}
+		if(config==@carbide-wall-large){
+			carbide.build=carbide.build + 24
+			thorium.build=thorium.build + 24
+		}
+		jump(TAG.243)
+		::TAG.301
+		silicon=silicon + 10
+		jump(TAG.243)
+		::TAG.302
+		silicon=silicon + 10
+		phase-fabric=phase-fabric + 10
+		jump(TAG.243)
+		::TAG.303
+	}while(links!=@links)
+	lead.unit=lead.unit * unitcost
+	metaglass.unit=metaglass.unit * unitcost
+	graphite.unit=graphite.unit * unitcost
+	coal.unit=coal.unit * unitcost
+	titanium.unit=titanium.unit * unitcost
+	thorium.unit=thorium.unit * unitcost
+	silicon.unit=silicon.unit * unitcost
+	plastanium.unit=plastanium.unit * unitcost
+	surge-alloy.unit=surge-alloy.unit * unitcost
+	phase-fabric.unit=phase-fabric.unit * unitcost
+	beryllium.unit=beryllium.unit * unitcost
+	tungsten.unit=tungsten.unit * unitcost
+	carbide.build=carbide.build * buildcost
+	tungsten.build=tungsten.build * buildcost
+	beryllium.build=beryllium.build * buildcost
+	thorium.build=thorium.build * buildcost
+	lead=lead + lead.unit
+	metaglass=metaglass + metaglass.unit
+	graphite=graphite + graphite.unit
+	coal=coal + coal.unit
+	titanium=titanium + titanium.unit
+	thorium=thorium + thorium.unit
+	thorium=thorium + thorium.build
+	silicon=silicon + silicon.unit
+	plastanium=plastanium + plastanium.unit
+	phase-fabric=phase-fabric + phase-fabric.unit
+	surge-alloy=surge-alloy + surge-alloy.unit
+	beryllium=beryllium + beryllium.unit
+	beryllium=beryllium + beryllium.build
+	tungsten=tungsten + tungsten.unit
+	tungsten=tungsten + tungsten.build
+	carbide=carbide + carbide.build
+	j=-1
+	l=-1
+	do{
+		::TAG.341
+		j=j + 1
+		jump(TAG.360).when(j>=19)
+		k=j * 5
+		jump2(+ k)
+	}while(copper<=0)
+	item=@copper
+	item.need=copper
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(lead<=0)
+	item=@lead
+	item.need=lead
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(metaglass<=0)
+	item=@metaglass
+	item.need=metaglass
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(graphite<=0)
+	item=@graphite
+	item.need=graphite
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(sand<=0)
+	item=@sand
+	item.need=sand
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(coal<=0)
+	item=@coal
+	item.need=coal
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(titanium<=0)
+	item=@titanium
+	item.need=titanium
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(thorium<=0)
+	item=@thorium
+	item.need=thorium
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(scrap<=0)
+	item=@scrap
+	item.need=scrap
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(silicon<=0)
+	item=@silicon
+	item.need=silicon
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(plastanium<=0)
+	item=@plastanium
+	item.need=plastanium
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(phase-fabric<=0)
+	item=@phase-fabric
+	item.need=phase-fabric
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(surge-alloy<=0)
+	item=@surge-alloy
+	item.need=surge-alloy
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(spore-pod<=0)
+	item=@spore-pod
+	item.need=spore-pod
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(blast-compound<=0)
+	item=@blast-compound
+	item.need=blast-compound
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(pyratite<=0)
+	item=@pyratite
+	item.need=pyratite
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(beryllium<=0)
+	item=@beryllium
+	item.need=beryllium
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(tungsten<=0)
+	item=@tungsten
+	item.need=tungsten
+	item.need=item.need * filling.percentage
+	jump(TAG.359)
+	jump(TAG.341).when(carbide<=0)
+	item=@carbide
+	item.need=carbide
+	item.need=item.need * filling.percentage
+	::TAG.359
+	l=l + 1
+	m=l * 3
+	jump2(+ m)
+	item1=item
+	item1.need=item.need
+	jump(TAG.341)
+	item2=item
+	item2.need=item.need
+	jump(TAG.341)
+	item3=item
+	item3.need=item.need
+	jump(TAG.341)
+	item4=item
+	item4.need=item.need
+	jump(TAG.341)
+	item5=item
+	item5.need=item.need
+	jump(TAG.341)
+	item6=item
+	item6.need=item.need
+	jump(TAG.341)
+	item7=item
+	item7.need=item.need
+	jump(TAG.341)
+	item8=item
+	item8.need=item.need
+	jump(TAG.341)
+	item9=item
+	item9.need=item.need
+	jump(TAG.341)
+	item10=item
+	item10.need=item.need
+	jump(TAG.341)
+	item11=item
+	item11.need=item.need
+	jump(TAG.341)
+	item12=item
+	item12.need=item.need
+	jump(TAG.341)
+	item13=item
+	item13.need=item.need
+	jump(TAG.341)
+	item14=item
+	item14.need=item.need
+	jump(TAG.341)
+	item15=item
+	item15.need=item.need
+	jump(TAG.341)
+	item16=item
+	item16.need=item.need
+	jump(TAG.341)
+	item17=item
+	item17.need=item.need
+	jump(TAG.341)
+	item18=item
+	item18.need=item.need
+	jump(TAG.341)
+	item19=item
+	item19.need=item.need
+	jump(TAG.341)
+	::TAG.360
+	l=l + 1
+	use.item=item1
+	use.need=item1.need
+	item.num=l
+	::TAG.361
+	p=p + 1
+}while(links!=@links)
+p=p .% item.num
+t=p * 3
+jump2(+ t)
+try.item=item1
+try.need=item1.need
+jump(TAG.381)
+try.item=item2
+try.need=item2.need
+jump(TAG.381)
+try.item=item3
+try.need=item3.need
+jump(TAG.381)
+try.item=item4
+try.need=item4.need
+jump(TAG.381)
+try.item=item5
+try.need=item5.need
+jump(TAG.381)
+try.item=item6
+try.need=item6.need
+jump(TAG.381)
+try.item=item7
+try.need=item7.need
+jump(TAG.381)
+try.item=item8
+try.need=item8.need
+jump(TAG.381)
+try.item=item9
+try.need=item9.need
+jump(TAG.381)
+try.item=item10
+try.need=item10.need
+jump(TAG.381)
+try.item=item11
+try.need=item11.need
+jump(TAG.381)
+try.item=item12
+try.need=item12.need
+jump(TAG.381)
+try.item=item13
+try.need=item13.need
+jump(TAG.381)
+try.item=item14
+try.need=item14.need
+jump(TAG.381)
+try.item=item15
+try.need=item15.need
+jump(TAG.381)
+try.item=item16
+try.need=item16.need
+jump(TAG.381)
+try.item=item17
+try.need=item17.need
+jump(TAG.381)
+try.item=item18
+try.need=item18.need
+jump(TAG.381)
+try.item=item19
+try.need=item19.need
+jump(TAG.381)
+jump(TAG.381)
+::TAG.381
+n=0
+try.itall=0
+use.itall=0
+do{
+	block=link(n)
+	type=block.sensor(@type)
+	if(type==@unloader){
+		block.enable(mod)
+		block.config(use.item)
+		jump(TAG.384)
+	}
+	try.item.num=block.sensor(try.item)
+	try.itall=try.itall + try.item.num
+	use.item.num=block.sensor(use.item)
+	use.itall=use.itall + use.item.num
+	::TAG.384
+	n=n + 1
+}while(n<@links)
+try%=try.itall / try.need
+use%=use.itall / use.need
+if(try%<=use%){
+	use.item=try.item
+	use.need=try.need
+}
+use%=use.itall / use.need
+mod=use% < 1
+jump(TAG.361)

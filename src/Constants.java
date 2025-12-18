@@ -1,15 +1,22 @@
-import java.util.*;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Constants {
-    final static Pattern NUMBER_PATTERN = Pattern.compile("\\d+(\\.\\d+)?");
+    final static String trueCondition = "always 0 0", falseCondition = "notEqual 0 0";
+    final static Pattern NUMBER_PATTERN = Pattern.compile("^([-+])?\\d+(\\.\\d+)?$");
     final static List<String> dotCtrlCodes = List.of(".ctrl(", ".enable(", ".config(", ".color(", ".shoot(",
             ".ulocate(", ".unpack(", ".pflush(", ".dflush(", ".write(");
     final static List<String> dotCodes = List.of(".sensor(", ".read(", ".orElse(");
     final static List<String> dotCodesAll = Stream.concat(dotCtrlCodes.stream(), dotCodes.stream())
             .collect(Collectors.toList());
+    final static List<String> dotOpReduced = dotCodesAll.stream().map(s -> s.substring(0, s.length() - 1)).toList();
     final static List<String> ctrlCodes = List.of("print(", "printchar(", "format(", "wait(", "stop(",
             "end(", "ubind(", "uctrl(", "ushoot(", "jump(", "jump2(", "printf(", "tag(", "raw(");
     final static Map<String, Integer> operatorOffsetMap = new HashMap<>() {{
@@ -30,136 +37,51 @@ public class Constants {
         put("logn", "log");
     }};
     final static Map<String, String> operatorReverseMap = new HashMap<>() {{
+        put("notEqual", "equal");
         put("equal", "notEqual");
         put("strictEqual", "notEqual");
-        put("always", "notEqual");
-        put("notEqual", "equal");
         put("lessThan", "greaterThanEq");
         put("lessThanEq", "greaterThan");
         put("greaterThan", "lessThanEq");
         put("greaterThanEq", "lessThan");
+        put("always", "never");
+        put("never", "always");
     }};
-    final static Map<String, String> operatorKeyMap = new HashMap<>() {{
-        put("+", "add");
-        put("-", "sub");
-        put("*", "mul");
-        put("/", "div");
-        put("//", "idiv");
-        put("%", "mod");
-        put("%%", "emod");
-        put(".^", "pow");
-        put("==", "equal");
-        put("!=", "notEqual");
-        put("&&", "land");
-        put("<", "lessThan");
-        put("<=", "lessThanEq");
-        put(">", "greaterThan");
-        put(">=", "greaterThanEq");
-        put("===", "strictEqual");
-        put("<<", "shl");
-        put(">>", "shr");
-        put(">>>", "ushr");
-        put("|", "or");
-        put("&", "and");
-        put("^", "xor");
-        put("=", "set");
-        put("(", "lbracket");
-        put(")", "rbracket");
+    final static BiMap<String, String> midOpKeysMap = HashBiMap.create(new HashMap<>() {{
+        for (int i = 0; i < Operator.values().length; i++) {
+            Operator o = Operator.values()[i];
+            put(o.value, o.name());
+        }
+    }});
+    final static BiMap<String, String> midOpValueMap = midOpKeysMap.inverse();
+    final static Map<String, Integer> midOpPriorityMap = new HashMap<>() {{
+        for (int i = 0; i < Operator.values().length; i++) {
+            Operator o = Operator.values()[i];
+            put(o.value, o.priority);
+        }
     }};
-    final static Map<String, String> operatorValueMap = new HashMap<>() {{
-        put("add", "+");
-        put("sub", "-");
-        put("mul", "*");
-        put("div", "/");
-        put("idiv", "//");
-        put("mod", "%");
-        put("emod", "%%");
-        put("pow", ".^");
-        put("equal", "==");
-        put("notEqual", "!=");
-        put("land", "&&");
-        put("lessThan", "<");
-        put("lessThanEq", "<=");
-        put("greaterThan", ">");
-        put("greaterThanEq", ">=");
-        put("strictEqual", "===");
-        put("shl", "<<");
-        put("shr", ">>");
-        put("ushr", ">>>");
-        put("or", "|");
-        put("and", "&");
-        put("xor", "^");
-        put("set", "=");
-        put("lbracket", "(");
-        put("rbracket", ")");
-        put("always", "==");
-    }};
-    final static Set<String> reducedOpSet = new HashSet<>(Constants.operatorKeyMap.keySet()) {{
-        List.of(")", "=").forEach(this::remove);
-    }};
-
     final static List<String> supportFormats = List.of(".mdtc", ".mdtcode", ".libmdtc");
 
-    /**
-     * 处理运算符的优先级
-     * 括号最高, 指数次之, 乘除位移再次之, 加减再次之, 比较垫底
-     *
-     */
     enum Operator {
-        ADD("+", 4), SUBTRACT("-", 4),
-        MULTIPLY("*", 5), INTEGER_DIVIDE("//", 5),
-        DIVIDE("/", 5), PERCENTAGE_MODULO("%%", 5),
-        MODULO("%", 5), EXPONENT(".^", 7),
-        STRICT_EQUALS("===", 3), EQUALS("==", 3),
-        NOT_EQUALS("!=", 3), LOGICAL_AND("&&", 2),
-        GREATER_THAN_OR_EQUAL_TO(">=", 3), LESS_THAN_OR_EQUAL_TO("<=", 3),
-        UNSIGNED_RIGHT_SHIFT(">>>", 5), RIGHT_SHIFT(">>", 5),
-        LEFT_SHIFT("<<", 5), BITWISE_XOR("^", 2),
-        GREATER_THAN(">", 3), LESS_THAN("<", 3),
-        AND("&", 2), OR("|", 2),
-        LEFT_BRACKET("(", 10), RIGHT_BRACKET(")", 10),
-        ASSIGN("=", 1);
-
-
+        add("+", 4), sub(".-", 4),
+        mul("*", 5), idiv("//", 5),
+        div("/", 5), emod("%%", 5),
+        mod(".%", 5), pow(".^", 7),
+        strictEqual("===", 3), equal("==", 3),
+        notEqual("!=", 3), land("&&", 2),
+        greaterThanEq(">=", 3), lessThanEq("<=", 3),
+        ushr(">>>", 5), shr(">>", 5),
+        shl("<<", 5), xor("^", 2),
+        greaterThan(">", 3), lessThan("<", 3),
+        and("&", 2), or("|", 2),
+        lbracket("(", 10), rbracket(")", 10),
+        set("=", 1), always("always", 1), never("never", 1);
         final String value;
         final int priority;
 
         Operator(String value, int priority) {
             this.value = value;
             this.priority = priority;
-        }
-
-        /**
-         * 比较两个符号的优先级
-         *
-         * @return c1的优先级是否比c2的高，高则返回正数，等于返回0，小于返回负数
-         */
-        public static int cmp(String c1, String c2) {
-            int p1 = 0, p2 = 0;
-            for (Operator o : Operator.values()) {
-                if (o.value.equals(c1)) p1 = o.priority;
-                if (o.value.equals(c2)) p2 = o.priority;
-            }
-            return p1 - p2;
-        }
-
-        /**
-         * 枚举出来的才视为运算符，用于扩展
-         *
-         * @return 运算符合法性
-         */
-        public static boolean isOperator(String c) {
-            for (Operator o : Operator.values()) {
-                if (o.value.equals(c)) return true;
-            }
-            return false;
-        }
-
-        public static int getPriority(String c) {
-            for (Operator o : Operator.values()) {
-                if (o.value.equals(c)) return o.priority == 10 ? 0 : o.priority;
-            }
-            return 11;
         }
     }
 }

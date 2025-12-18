@@ -5,8 +5,10 @@
       <w>drawflush</w>
       <w>emod</w>
       <w>getlink</w>
+      <w>greaterthaneq</w>
       <w>idiv</w>
       <w>lbracket</w>
+      <w>lessthaneq</w>
       <w>libmdtc</w>
       <w>logn</w>
       <w>maph</w>

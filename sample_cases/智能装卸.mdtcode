@@ -1,0 +1,726 @@
+print "[yellow]智卸[red]最终版[white]"
+print "by [cyan]Nihil[white] 2024/2/18\n"
+print "支持所有的工厂和兵厂及造兵相关的小构造\n"
+print "可持续扩展支持的方块种类而无算力损耗\n"
+print "连接所有待输入物品的建筑以及装卸器\n"
+print "智能生成物品需求表，也可手动配置\n"
+print "质驱逻辑部分参考了矿机的逻辑\n"
+printflush message1
+set filling.percentage 1
+set links @links
+set unitcost 2
+set buildcost 2
+set copper 0
+set lead 0
+set lead.unit 0
+set metaglass 0
+set metaglass.unit 0
+set graphite 0
+set graphite.unit 0
+set sand 0
+set coal 0
+set coal.unit 0
+set titanium 0
+set titanium.unit 0
+set thorium 0
+set thorium.unit 0
+set thorium.build 0
+set scrap 0
+set silicon 0
+set silicon.unit 0
+set plastanium 0
+set plastanium.unit 0
+set phase-fabric 0
+set phase-fabric.unit 0
+set surge-alloy 0
+set surge-alloy.unit 0
+set spore-pod 0
+set blast-compound 0
+set pyratite 0
+set beryllium 0
+set beryllium.unit 0
+set beryllium.build 0
+set tungsten 0
+set tungsten.unit 0
+set tungsten.build 0
+set carbide 0
+set carbide.build 0
+set i 0
+getlink block i
+jump 443 equal block null
+op add i i 1
+sensor blocktype block @type
+sensor id blocktype @id
+op add @counter @counter id
+jump 305 always 0 0
+jump 305 always 0 0
+jump 307 always 0 0
+jump 310 always 0 0
+jump 314 always 0 0
+jump 317 always 0 0
+jump 319 always 0 0
+jump 317 always 0 0
+jump 325 always 0 0
+jump 329 always 0 0
+jump 332 always 0 0
+jump 48 always 0 0
+jump 332 always 0 0
+jump 335 always 0 0
+jump 332 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 438 always 0 0
+jump 347 always 0 0
+jump 347 always 0 0
+jump 440 always 0 0
+jump 347 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 362 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 360 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 364 always 0 0
+jump 376 always 0 0
+jump 383 always 0 0
+jump 392 always 0 0
+jump 395 always 0 0
+jump 399 always 0 0
+jump 403 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 429 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 342 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 349 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 349 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 358 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 345 always 0 0
+jump 337 always 0 0
+jump 354 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 356 always 0 0
+jump 352 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 322 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 347 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 347 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 408 always 0 0
+jump 411 always 0 0
+jump 414 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 426 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 417 always 0 0
+jump 420 always 0 0
+jump 423 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 48 always 0 0
+jump 347 always 0 0
+jump 48 always 0 0
+op add coal coal 10
+jump 48 always 0 0
+op add coal coal 5
+op add sand sand 10
+jump 48 always 0 0
+op add coal coal 20
+op add sand sand 30
+op add pyratite pyratite 5
+jump 48 always 0 0
+op add lead lead 10
+op add sand sand 10
+jump 48 always 0 0
+op add titanium titanium 10
+jump 48 always 0 0
+op add sand sand 20
+op add thorium thorium 8
+jump 48 always 0 0
+op add sand sand 36
+op add thorium thorium 12
+jump 48 always 0 0
+op add coal coal 5
+op add lead lead 10
+op add sand sand 10
+jump 48 always 0 0
+op add spore-pod spore-pod 10
+op add pyratite pyratite 10
+jump 48 always 0 0
+sensor ic block @itemCapacity
+op add scrap scrap ic
+jump 48 always 0 0
+op add spore-pod spore-pod 10
+jump 48 always 0 0
+op add copper copper 15
+op add lead lead 20
+op add titanium titanium 10
+op add silicon silicon 15
+jump 48 always 0 0
+op add graphite graphite 7
+op add sand sand 28
+jump 48 always 0 0
+op add beryllium beryllium 10
+jump 48 always 0 0
+op add phase-fabric phase-fabric 10
+jump 48 always 0 0
+op add graphite graphite 18
+op add tungsten tungsten 12
+jump 48 always 0 0
+op add sand sand 10
+jump 48 always 0 0
+op add silicon silicon 20
+jump 48 always 0 0
+op add graphite graphite 10
+jump 48 always 0 0
+op add thorium thorium 20
+jump 48 always 0 0
+op add thorium thorium 30
+jump 48 always 0 0
+op add thorium thorium 10
+jump 48 always 0 0
+sensor config block @config
+jump 368 notEqual config @dagger
+op add lead.unit lead.unit 10
+op add silicon.unit silicon.unit 10
+jump 372 notEqual config @nova
+op add silicon.unit silicon.unit 30
+op add lead.unit lead.unit 20
+op add titanium.unit titanium.unit 20
+jump 375 notEqual config @crawler
+op add silicon.unit silicon.unit 8
+op add coal.unit coal.unit 10
+jump 48 always 0 0
+sensor config block @config
+jump 379 notEqual config @flare
+op add silicon.unit silicon.unit 15
+jump 382 notEqual config @mono
+op add lead.unit lead.unit 15
+op add silicon.unit silicon.unit 30
+jump 48 always 0 0
+sensor config block @config
+jump 387 notEqual config @risso
+op add metaglass.unit metaglass.unit 35
+op add silicon.unit silicon.unit 20
+jump 391 notEqual config @retusa
+op add metaglass.unit metaglass.unit 25
+op add silicon.unit silicon.unit 15
+op add titanium.unit titanium.unit 20
+jump 48 always 0 0
+op add silicon.unit silicon.unit 40
+op add graphite.unit graphite.unit 40
+jump 48 always 0 0
+op add silicon.unit silicon.unit 130
+op add titanium.unit titanium.unit 80
+op add metaglass.unit metaglass.unit 40
+jump 48 always 0 0
+op add silicon.unit silicon.unit 850
+op add titanium.unit titanium.unit 750
+op add plastanium.unit plastanium.unit 650
+jump 48 always 0 0
+op add silicon.unit silicon.unit 1000
+op add plastanium.unit plastanium.unit 600
+op add phase-fabric.unit phase-fabric.unit 350
+op add surge-alloy.unit surge-alloy.unit 500
+jump 48 always 0 0
+op add beryllium.unit beryllium.unit 40
+op add silicon.unit silicon.unit 50
+jump 48 always 0 0
+op add beryllium.unit beryllium.unit 50
+op add silicon.unit silicon.unit 70
+jump 48 always 0 0
+op add graphite.unit graphite.unit 50
+op add silicon.unit silicon.unit 70
+jump 48 always 0 0
+op add tungsten.unit tungsten.unit 30
+op add silicon.unit silicon.unit 40
+jump 48 always 0 0
+op add tungsten.unit tungsten.unit 40
+op add silicon.unit silicon.unit 50
+jump 48 always 0 0
+op add tungsten.unit tungsten.unit 40
+op add silicon.unit silicon.unit 60
+jump 48 always 0 0
+op add silicon.unit silicon.unit 100
+op add thorium.unit thorium.unit 80
+jump 48 always 0 0
+sensor config block @config
+jump 432 notEqual config @beryllium-wall-large
+op add beryllium.build beryllium.build 24
+jump 434 notEqual config @tungsten-wall-large
+op add tungsten.build tungsten.build 24
+jump 437 notEqual config @carbide-wall-large
+op add carbide.build carbide.build 24
+op add thorium.build thorium.build 24
+jump 48 always 0 0
+op add silicon silicon 10
+jump 48 always 0 0
+op add silicon silicon 10
+op add phase-fabric phase-fabric 10
+jump 48 always 0 0
+jump 9 notEqual links @links
+op mul lead.unit lead.unit unitcost
+op mul metaglass.unit metaglass.unit unitcost
+op mul graphite.unit graphite.unit unitcost
+op mul coal.unit coal.unit unitcost
+op mul titanium.unit titanium.unit unitcost
+op mul thorium.unit thorium.unit unitcost
+op mul silicon.unit silicon.unit unitcost
+op mul plastanium.unit plastanium.unit unitcost
+op mul surge-alloy.unit surge-alloy.unit unitcost
+op mul phase-fabric.unit phase-fabric.unit unitcost
+op mul beryllium.unit beryllium.unit unitcost
+op mul tungsten.unit tungsten.unit unitcost
+op mul carbide.build carbide.build buildcost
+op mul tungsten.build tungsten.build buildcost
+op mul beryllium.build beryllium.build buildcost
+op mul thorium.build thorium.build buildcost
+op add lead lead lead.unit
+op add metaglass metaglass metaglass.unit
+op add graphite graphite graphite.unit
+op add coal coal coal.unit
+op add titanium titanium titanium.unit
+op add thorium thorium thorium.unit
+op add thorium thorium thorium.build
+op add silicon silicon silicon.unit
+op add plastanium plastanium plastanium.unit
+op add phase-fabric phase-fabric phase-fabric.unit
+op add surge-alloy surge-alloy surge-alloy.unit
+op add beryllium beryllium beryllium.unit
+op add beryllium beryllium beryllium.build
+op add tungsten tungsten tungsten.unit
+op add tungsten tungsten tungsten.build
+op add carbide carbide carbide.build
+set j -1
+set l -1
+op add j j 1
+jump 636 greaterThanEq j 19
+op mul k j 5
+op add @counter @counter k
+jump 478 lessThanEq copper 0
+set item @copper
+set item.need copper
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq lead 0
+set item @lead
+set item.need lead
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq metaglass 0
+set item @metaglass
+set item.need metaglass
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq graphite 0
+set item @graphite
+set item.need graphite
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq sand 0
+set item @sand
+set item.need sand
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq coal 0
+set item @coal
+set item.need coal
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq titanium 0
+set item @titanium
+set item.need titanium
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq thorium 0
+set item @thorium
+set item.need thorium
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq scrap 0
+set item @scrap
+set item.need scrap
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq silicon 0
+set item @silicon
+set item.need silicon
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq plastanium 0
+set item @plastanium
+set item.need plastanium
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq phase-fabric 0
+set item @phase-fabric
+set item.need phase-fabric
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq surge-alloy 0
+set item @surge-alloy
+set item.need surge-alloy
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq spore-pod 0
+set item @spore-pod
+set item.need spore-pod
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq blast-compound 0
+set item @blast-compound
+set item.need blast-compound
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq pyratite 0
+set item @pyratite
+set item.need pyratite
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq beryllium 0
+set item @beryllium
+set item.need beryllium
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq tungsten 0
+set item @tungsten
+set item.need tungsten
+op mul item.need item.need filling.percentage
+jump 576 always 0 0
+jump 478 lessThanEq carbide 0
+set item @carbide
+set item.need carbide
+op mul item.need item.need filling.percentage
+op add l l 1
+op mul m l 3
+op add @counter @counter m
+set item1 item
+set item1.need item.need
+jump 478 always 0 0
+set item2 item
+set item2.need item.need
+jump 478 always 0 0
+set item3 item
+set item3.need item.need
+jump 478 always 0 0
+set item4 item
+set item4.need item.need
+jump 478 always 0 0
+set item5 item
+set item5.need item.need
+jump 478 always 0 0
+set item6 item
+set item6.need item.need
+jump 478 always 0 0
+set item7 item
+set item7.need item.need
+jump 478 always 0 0
+set item8 item
+set item8.need item.need
+jump 478 always 0 0
+set item9 item
+set item9.need item.need
+jump 478 always 0 0
+set item10 item
+set item10.need item.need
+jump 478 always 0 0
+set item11 item
+set item11.need item.need
+jump 478 always 0 0
+set item12 item
+set item12.need item.need
+jump 478 always 0 0
+set item13 item
+set item13.need item.need
+jump 478 always 0 0
+set item14 item
+set item14.need item.need
+jump 478 always 0 0
+set item15 item
+set item15.need item.need
+jump 478 always 0 0
+set item16 item
+set item16.need item.need
+jump 478 always 0 0
+set item17 item
+set item17.need item.need
+jump 478 always 0 0
+set item18 item
+set item18.need item.need
+jump 478 always 0 0
+set item19 item
+set item19.need item.need
+jump 478 always 0 0
+op add l l 1
+set use.item item1
+set use.need item1.need
+set item.num l
+op add p p 1
+jump 0 notEqual links @links
+op mod p p item.num
+op mul t p 3
+op add @counter @counter t
+set try.item item1
+set try.need item1.need
+jump 703 always 0 0
+set try.item item2
+set try.need item2.need
+jump 703 always 0 0
+set try.item item3
+set try.need item3.need
+jump 703 always 0 0
+set try.item item4
+set try.need item4.need
+jump 703 always 0 0
+set try.item item5
+set try.need item5.need
+jump 703 always 0 0
+set try.item item6
+set try.need item6.need
+jump 703 always 0 0
+set try.item item7
+set try.need item7.need
+jump 703 always 0 0
+set try.item item8
+set try.need item8.need
+jump 703 always 0 0
+set try.item item9
+set try.need item9.need
+jump 703 always 0 0
+set try.item item10
+set try.need item10.need
+jump 703 always 0 0
+set try.item item11
+set try.need item11.need
+jump 703 always 0 0
+set try.item item12
+set try.need item12.need
+jump 703 always 0 0
+set try.item item13
+set try.need item13.need
+jump 703 always 0 0
+set try.item item14
+set try.need item14.need
+jump 703 always 0 0
+set try.item item15
+set try.need item15.need
+jump 703 always 0 0
+set try.item item16
+set try.need item16.need
+jump 703 always 0 0
+set try.item item17
+set try.need item17.need
+jump 703 always 0 0
+set try.item item18
+set try.need item18.need
+jump 703 always 0 0
+set try.item item19
+set try.need item19.need
+jump 703 always 0 0
+jump 703 always 0 0
+set n 0
+set try.itall 0
+set use.itall 0
+getlink block n
+sensor type block @type
+jump 712 notEqual type @unloader
+control enabled block mod 0 0 0
+control config block use.item 0 0 0
+jump 716 always 0 0
+sensor try.item.num block try.item
+op add try.itall try.itall try.item.num
+sensor use.item.num block use.item
+op add use.itall use.itall use.item.num
+op add n n 1
+jump 706 lessThan n @links
+op div try% try.itall try.need
+op div use% use.itall use.need
+jump 723 greaterThan try% use%
+set use.item try.item
+set use.need try.need
+op div use% use.itall use.need
+op lessThan mod use% 1
+jump 640 always 0 0

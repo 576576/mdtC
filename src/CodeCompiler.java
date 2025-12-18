@@ -276,33 +276,36 @@ public class CodeCompiler {
             put("draw(", s -> "draw " + Utils.padParams(7, s));
 
             put("jump(", s -> {
-                final String defaultTarget = "DEFAULT", defaultCondition = "always 0 0";
-                String target, condition = defaultCondition;
+                final String defaultTarget = "DEFAULT", trueCondition = Constants.trueCondition, falseCondition = Constants.falseCondition;
+                String target, condition = trueCondition;
 
                 Map<String, String> paramsMap = Utils.getChainParams(s);
                 target = paramsMap.getOrDefault("main", defaultTarget);
 
                 s = paramsMap.getOrDefault("when", "");
-                List<String> splitList = Utils.stringSplitPro(s);
+                List<String> splitList = Utils.stringSplit(s);
                 if (splitList.size() > 1) {
                     stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
                         ref.midNum = bashCache.stat();
                         String bashLast = bashCache.bash().getLast();
                         condition = Utils.getCondition(bashLast);
-                        if (!condition.equals(defaultCondition)) bashCache.bash().removeLast();
+                        if (!condition.equals(trueCondition)) bashCache.bash().removeLast();
                         else if (!bashCache.expr().isEmpty())
                             condition = String.join(" ", "notEqual", bashCache.expr(), "0");
                         bashList.addAll(bashCache.bash());
                     }
-                } else if (splitList.size() == 1)
-                    condition = String.join(" ", "notEqual", s, "0");
+                } else if (splitList.size() == 1) {
+                    if (splitList.getFirst().equals("always")) condition = trueCondition;
+                    else if (splitList.getFirst().equals("never")) condition = falseCondition;
+                    else condition = String.join(" ", "notEqual", s, "0");
+                }
 
                 return String.join(" ", "jump", target, condition);
             });
 
             put("jump2(", s -> {
-                List<String> strSplit = Utils.stringSplitPro(s);
+                List<String> strSplit = Utils.stringSplit(s);
                 if (strSplit.size() > 1) s = "@counter=@counter" + s;
                 else s = "@counter=" + s;
 
@@ -322,7 +325,7 @@ public class CodeCompiler {
             put("raw(", s -> s.substring(1, s.length() - 1));
         }};
 
-        final List<String> ignoreKeys = List.of("jump(", "jump2(", "draw(", "ushoot(", "tag(", "raw(");
+        final List<String> ignoreKeys = List.of("jump(", "jump2(", "draw(", "ushoot(", "tag(", "raw(", "print(", "printf(");
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotChain(expr, start);
@@ -331,7 +334,7 @@ public class CodeCompiler {
                     return stream;
                 }
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
-                List<String> splitList = Utils.stringSplitPro(s);
+                List<String> splitList = Utils.stringSplit(s);
                 if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
                     List<String> splitParts = Utils.bracketPartSplit(s);
                     for (int i = 0; i < splitParts.size(); i++) {
@@ -436,7 +439,7 @@ public class CodeCompiler {
                     return stream;
                 }
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
-                List<String> splitList = Utils.stringSplitPro(s);
+                List<String> splitList = Utils.stringSplit(s);
                 if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
                     List<String> splitParts = Utils.bracketPartSplit(s);
                     for (int i = 0; i < splitParts.size(); i++) {
@@ -480,14 +483,14 @@ public class CodeCompiler {
             put(".sensor(", s -> "sensor mid." + ref.midNum + " " + ref.block + " " + s);
             put(".read(", s -> "read mid." + ref.midNum + " " + ref.block + " " + s);
             put(".orElse(", s -> {
-                final String defaultTarget = "0", defaultCondition = "always 0 0";
+                final String defaultTarget = "0", defaultCondition = Constants.trueCondition;
                 String target, condition = defaultCondition;
 
                 Map<String, String> paramsMap = Utils.getChainParams(s);
                 target = paramsMap.getOrDefault("main", defaultTarget);
 
                 s = paramsMap.getOrDefault("when", "");
-                List<String> splitList = Utils.stringSplitPro(s);
+                List<String> splitList = Utils.stringSplit(s);
                 if (splitList.size() > 1) {
                     stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(s, ref.midNum));
                     if (!bashCache.bash().isEmpty()) {
@@ -511,11 +514,11 @@ public class CodeCompiler {
         for (Map.Entry<String, Function<String, String>> entry : funcHandlers.entrySet()) {
             while (expr.contains(entry.getKey())) {
                 int start = expr.indexOf(entry.getKey()), end = Utils.getEndDotChain(expr, start);
-                List<String> splitList = Utils.stringSplitPro(expr.substring(0, start));
+                List<String> splitList = Utils.stringSplit(expr.substring(0, start));
                 ref.block = splitList.getLast();
 
                 String s = expr.substring(start + entry.getKey().length(), end).trim();
-                splitList = Utils.stringSplitPro(s);
+                splitList = Utils.stringSplit(s);
                 String midVariable;
                 if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
                     stdCodeStream bashCache = convertCodeLine(stdCodeStream.of(s, ref.midNum));
@@ -654,7 +657,7 @@ public class CodeCompiler {
                         return stream;
                     }
                     String s = expr.substring(start + entry.getKey().length(), end).trim();
-                    List<String> splitList = Utils.stringSplitPro(s);
+                    List<String> splitList = Utils.stringSplit(s);
                     if (splitList.size() > 1 && !ignoreKeys.contains(entry.getKey())) {
                         List<String> splitParts = Utils.bracketPartSplit(s);
                         for (int i = 0; i < splitParts.size(); i++) {
@@ -687,7 +690,7 @@ public class CodeCompiler {
     /**
      * <p>转换{@code MidCode}类型函数</p>
      * <p>{@code MidCode}为有副作用的以可逆波兰化形式中接调用函数,</p>
-     * <p>有效函数名详见{@link Constants#operatorKeyMap operators}</p>
+     * <p>有效函数名详见{@link Constants#midOpKeysMap operators}</p>
      *
      * @return {@code stdIOStream}
      */
@@ -698,7 +701,7 @@ public class CodeCompiler {
         var ref = new Object() {
             int midNum = stream.stat();
         };
-        final Map<String, String> operatorMap = Constants.operatorKeyMap;
+        final Map<String, String> operatorMap = Constants.midOpKeysMap;
         final Map<String, Integer> offsetMap = Constants.operatorOffsetMap;
 
         for (String token : rpnArray) {

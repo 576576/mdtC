@@ -1,3 +1,9 @@
-op add mid.1 1 -1
-op sub mid.2 0 x0
-op sub x mid.1 mid.2
+set 1 1
+jump 0 always 0 0
+jump 8 always 0 0
+jump 8 always 0 0
+jump 8 always 0 0
+jump 7 always 0 0
+set e 1
+set e 2
+set e 3
