@@ -1,5 +1,5 @@
-# MindustryC
-Version: `1.32`
+# mdtC
+Version: `1.5`
 
 本转换器支持类Java代码和mindustry逻辑代码互转.  
 输入: `*.mdtc` `*.mdtcode` `*.libmdtc`.  
